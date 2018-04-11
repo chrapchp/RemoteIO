@@ -62,7 +62,7 @@
 #ifndef MgsModbus_h
 #define MgsModbus_h
 
-#define MbDataLen 140 // length of the MdData array
+#define MbDataLen 236 // length of the MdData array
 #define MB_PORT 502
 
 enum MB_FC {

@@ -1,10 +1,12 @@
+#include <Streaming.h>
+
 #include "MgsModbus.h"
 
 // For Arduino 1.0
 EthernetServer MbServer(MB_PORT);
 EthernetClient MbmClient;
 
-// #define DEBUG
+ //#define DEBUG
 
 MgsModbus::MgsModbus()
 {
@@ -88,7 +90,7 @@ void MgsModbus::Req(MB_FC FC, word Ref, word Count, word Pos)
         Serial.print(MbmByteArray[i],HEX);
         if (i != MbmByteArray[5]+5) {Serial.print(".");} else {Serial.println();}
       }
-    #endif    
+    #endif
     for(int i=0;i<MbmByteArray[5]+6;i++) {
       MbmClient.write(MbmByteArray[i]);
     }
@@ -99,7 +101,7 @@ void MgsModbus::Req(MB_FC FC, word Ref, word Count, word Pos)
   } else {
     #ifdef DEBUG
       Serial.println("connection with modbus master failed");
-    #endif    
+    #endif
     MbmClient.stop();
   }
 }
@@ -112,12 +114,12 @@ void MgsModbus::MbmRun()
   while (MbmClient.available()) {
     MbmByteArray[MbmCounter] = MbmClient.read();
     if (MbmCounter > 4)  {
-      if (MbmCounter == MbmByteArray[5] + 5) { // the full answer is recieved  
+      if (MbmCounter == MbmByteArray[5] + 5) { // the full answer is recieved
         MbmClient.stop();
         MbmProcess();
         #ifdef DEBUG
           Serial.println("recieve klaar");
-        #endif    
+        #endif
       }
     }
     MbmCounter++;
@@ -134,7 +136,7 @@ void MgsModbus::MbmProcess()
       if (i != MbmByteArray[5]+5) {Serial.print(".");
       } else {Serial.println();}
     }
-  #endif    
+  #endif
   //****************** Read Coils (1) & Read Input discretes (2) **********************
   if(MbmFC == MB_FC_READ_COILS || MbmFC == MB_FC_READ_DISCRETE_INPUT) {
     word Count = MbmByteArray[8] * 8;
@@ -174,7 +176,7 @@ void MgsModbus::MbmProcess()
 
 //****************** Recieve data for ModBusSlave ****************
 void MgsModbus::MbsRun()
-{  
+{
   //****************** Read from socket ****************
   EthernetClient client = MbServer.available();
   if(client.available())
@@ -194,7 +196,7 @@ void MgsModbus::MbsRun()
     Start = word(MbsByteArray[8],MbsByteArray[9]);
     CoilDataLength = word(MbsByteArray[10],MbsByteArray[11]);
     ByteDataLength = CoilDataLength / 8;
-    if(ByteDataLength * 8 < CoilDataLength) ByteDataLength++;      
+    if(ByteDataLength * 8 < CoilDataLength) ByteDataLength++;
     CoilDataLength = ByteDataLength * 8;
     MbsByteArray[5] = ByteDataLength + 3; //Number of bytes after this one.
     MbsByteArray[8] = ByteDataLength;     //Number of bytes after this one (or number of bytes of data).
@@ -228,6 +230,7 @@ void MgsModbus::MbsRun()
   }
   //****************** Write Coil (5) **********************
   if(MbsFC == MB_FC_WRITE_COIL) {
+
     Start = word(MbsByteArray[8],MbsByteArray[9]);
     if (word(MbsByteArray[10],MbsByteArray[11]) == 0xFF00){SetBit(Start,true);}
     if (word(MbsByteArray[10],MbsByteArray[11]) == 0x0000){SetBit(Start,false);}
@@ -235,7 +238,7 @@ void MgsModbus::MbsRun()
     MessageLength = 8;
     client.write(MbsByteArray, MessageLength);
     MbsFC = MB_FC_NONE;
-  } 
+  }
   //****************** Write Register (6) ******************
   if(MbsFC == MB_FC_WRITE_REGISTER) {
     Start = word(MbsByteArray[8],MbsByteArray[9]);
@@ -247,17 +250,22 @@ void MgsModbus::MbsRun()
   }
   //****************** Write Multiple Coils (15) **********************
   if(MbsFC == MB_FC_WRITE_MULTIPLE_COILS) {
+
     Start = word(MbsByteArray[8],MbsByteArray[9]);
+  //  Serial << "Start:" << Start;
     CoilDataLength = word(MbsByteArray[10],MbsByteArray[11]);
+//    Serial << " Coil Len:" << CoilDataLength;
     MbsByteArray[5] = 6;
     for(int i = 0; i < CoilDataLength; i++)
     {
+  //    bool val = bitRead(MbsByteArray[13 + (i/8)],i-((i/8)*8));
+  //    Serial << " val[" << i << "]" << val;
       SetBit(Start + i,bitRead(MbsByteArray[13 + (i/8)],i-((i/8)*8)));
     }
     MessageLength = 12;
     client.write(MbsByteArray, MessageLength);
     MbsFC = MB_FC_NONE;
-  }  
+  }
   //****************** Write Multiple Registers (16) ******************
   if(MbsFC == MB_FC_WRITE_MULTIPLE_REGISTERS) {
     Start = word(MbsByteArray[8],MbsByteArray[9]);
@@ -291,13 +299,13 @@ MB_FC MgsModbus::SetFC(int fc)
   return FC;
 }
 
- 
+
 word MgsModbus::GetDataLen()
 {
   return MbDataLen;
 }
- 
- 
+
+
 boolean MgsModbus::GetBit(word Number)
 {
   int ArrayPos = Number / 16;
@@ -312,9 +320,8 @@ boolean MgsModbus::SetBit(word Number,boolean Data)
   int ArrayPos = Number / 16;
   int BitPos = Number - ArrayPos * 16;
   boolean Overrun = ArrayPos > MbDataLen * 16; // check for data overrun
-  if (!Overrun){                 
+  if (!Overrun){
     bitWrite(MbData[ArrayPos],BitPos,Data);
-  } 
+  }
   return Overrun;
 }
-
