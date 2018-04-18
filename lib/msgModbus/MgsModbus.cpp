@@ -234,8 +234,13 @@ void MgsModbus::MbsRun()
     Start = word(MbsByteArray[8],MbsByteArray[9]);
     if (word(MbsByteArray[10],MbsByteArray[11]) == 0xFF00){SetBit(Start,true);}
     if (word(MbsByteArray[10],MbsByteArray[11]) == 0x0000){SetBit(Start,false);}
-    MbsByteArray[5] = 2; //Number of bytes after this one.
-    MessageLength = 8;
+    //MbsByteArray[5] = 2; //Number of bytes after this one.
+    //MessageLength = 8;
+    // changed write response to this. The above caused malformed messages from wireshark
+    // 2018Apr17-pjc
+    MbsByteArray[5] = 6; //Number of bytes after this one.
+    MessageLength = 12;
+
     client.write(MbsByteArray, MessageLength);
     MbsFC = MB_FC_NONE;
   }
@@ -258,8 +263,6 @@ void MgsModbus::MbsRun()
     MbsByteArray[5] = 6;
     for(int i = 0; i < CoilDataLength; i++)
     {
-  //    bool val = bitRead(MbsByteArray[13 + (i/8)],i-((i/8)*8));
-  //    Serial << " val[" << i << "]" << val;
       SetBit(Start + i,bitRead(MbsByteArray[13 + (i/8)],i-((i/8)*8)));
     }
     MessageLength = 12;
