@@ -236,19 +236,23 @@ void setup()
 
   EEPROMLoadConfig();
 
-  // currentIP.fromString("192.168.1.51");
-  Ethernet.begin(currentMAC, currentIP, currentGateway, currentSubnet);
 
+  Ethernet.begin(currentMAC, currentIP, currentGateway, currentSubnet);
   CI_001.setOnEdgeEvent(&onRestoreDefaults);
   CI_001.setEnabled(true);
 
   // FT_001.setUnits(true);
+
   ENABLE_FT001_SENSOR_INTERRUPTS();
+
 }
 
 void loop()
 {
+
+
   MBSlave.MbsRun();
+
   refreshHostReads();
   processHostWrites();
 
@@ -258,6 +262,7 @@ void loop()
   KI_001.refresh();
   KI_004.refresh();
   refreshTimerOutputs();
+
 }
 
 void refreshAnalogs()
@@ -481,29 +486,11 @@ void refreshHostReads()
   MBSlave.MbData[HR_AI_006] =     AI_006.getRawSample();
   MBSlave.MbData[HR_AI_007] =     AI_007.getRawSample();
 
+  MBSlave.MbData[HR_DY_007_OFCV] = (uint16_t)(DY_007.getCurrentInactiveDuration() / 1000);
+  MBSlave.MbData[HR_DY_007_ONCV] = (uint16_t)(DY_007.getCurrentActiveDuration() / 1000);
 
-  uint32_t onVal;
-  uint32_t offVal;
-
-  onVal =
-    (DY_007.isActiveLow() ==
-     true ? DY_007.getCurrentOnDuration() : DY_007.getCurrentOffDuration());
-  offVal =
-    (DY_007.isActiveLow() ==
-     true ? DY_007.getCurrentOffDuration() : DY_007.getCurrentOnDuration());
-
-
-  MBSlave.MbData[HR_DY_007_OFCV] = (uint16_t)(offVal / 1000);
-  MBSlave.MbData[HR_DY_007_ONCV] = (uint16_t)(onVal / 1000);
-
-  onVal =
-    (DY_008.isActiveLow() ==
-     true ? DY_008.getCurrentOnDuration() : DY_008.getCurrentOffDuration());
-  offVal =
-    (DY_008.isActiveLow() ==
-     true ? DY_008.getCurrentOffDuration() : DY_008.getCurrentOnDuration());
-  MBSlave.MbData[HR_DY_008_OFCV] = (uint16_t)(offVal / 1000);
-  MBSlave.MbData[HR_DY_008_ONCV] = (uint16_t)(onVal / 1000);
+  MBSlave.MbData[HR_DY_008_OFCV] = (uint16_t)(DY_008.getCurrentInactiveDuration() / 1000);
+  MBSlave.MbData[HR_DY_008_ONCV] = (uint16_t)(DY_008.getCurrentActiveDuration()  / 1000);
 
   // MBSlave.SetBit(CS_DI_000, digitalRead(CONTROLLINO_DI0));
 
@@ -657,27 +644,13 @@ void processHostWrites()
   AY_001.writeAO(MBSlave.MbData[HW_AY_001]);
 
   // DO TImer presets controllino: Active High reverse
-  uint16_t onVal;
-  uint16_t offVal;
 
-  onVal =
-    (DY_007.isActiveLow() ==
-     true ? MBSlave.MbData[HW_DY_007_ONSP] : MBSlave.MbData[HW_DY_007_OFSP]);
-  offVal =
-    (DY_007.isActiveLow() ==
-     true ? MBSlave.MbData[HW_DY_007_OFSP] : MBSlave.MbData[HW_DY_007_ONSP]);
 
-  DY_007.setOffDuration(offVal);
-  DY_007.setOnDuration(onVal);
+  DY_007.setInactiveDuration(MBSlave.MbData[HW_DY_007_OFSP]);
+  DY_007.setActiveDuration(MBSlave.MbData[HW_DY_007_ONSP]);
 
-  onVal =
-    (DY_008.isActiveLow() ==
-     true ? MBSlave.MbData[HW_DY_008_ONSP] : MBSlave.MbData[HW_DY_008_OFSP]);
-  offVal =
-    (DY_008.isActiveLow() ==
-     true ? MBSlave.MbData[HW_DY_008_OFSP] : MBSlave.MbData[HW_DY_008_ONSP]);
-  DY_008.setOffDuration(offVal);
-  DY_008.setOnDuration(onVal);
+  DY_008.setInactiveDuration(MBSlave.MbData[HW_DY_008_OFSP]);
+  DY_008.setActiveDuration(MBSlave.MbData[HW_DY_008_ONSP]);
 
   // capture pending IP
   blconvert.regsl[1] =   MBSlave.MbData[HW_CI_006_PV];
@@ -776,7 +749,6 @@ void EEPROMLoadConfig()
   EEPROM.get(    EEPROM_MAC_ADDR, currentMAC);
 
     #ifdef IO_DEBUG
-  *tracePort << "6...";
   *tracePort << "currentIP:" << currentIP << endl;
   *tracePort << "currentGateway:" << currentGateway << endl;
   *tracePort << "currentSubnet:" << currentSubnet << endl;
