@@ -34,8 +34,15 @@
 #include <DA_AnalogOutput.h>
 #include <DA_OneWireDallasMgr.h>
 #include <DA_NonBlockingDelay.h>
+#include <DA_AtlasMgr.h>
 
+#include "DA_TCPCommandHandler.h"
 #include "remoteIO.h"
+
+
+char atlasrxBuff[DA_ATLAS_RX_BUF_SZ];
+DA_AtlasMgr atlasSensorMgr                = DA_AtlasMgr(Serial2, s1, s2, s3);
+DA_TCPCommandHandler remoteCommandHandler = DA_TCPCommandHandler();
 
 
 MgsModbus MBSlave;
@@ -97,10 +104,26 @@ void EEPROMLoadConfig();
 void EEPROMWriteDefaultConfig();
 void doCheckMACChange();
 void doCheckRebootDevice();
-#ifdef IO_DEBUG
+void rebootDevice();
+// remote command handlers
+void remoteAtlasCommandHandler(uint8_t argc,
+                               char  **argv,
+                               Stream *aOutputStream);
+void remoteDeviceCommandHandler(uint8_t argc,
+                                char  **argv,
+                                Stream *aOutputStream);
+
+void remoteHelpCommandHandler(uint8_t argc,
+                              char  **argv,
+                              Stream *aOutputStream);
+
+void remoteOneWireCommandHandler(uint8_t argc,
+                                 char  **argv,
+                                 Stream *aOutputStream);
+
 void printByteArray(uint8_t anArray[],
-                    uint8_t aSize);
-#endif // ifdef IO_DEBUG
+                    uint8_t aSize,
+                    Stream *aOutputStream);
 
 
 // IP address from class needs bytes flipped for modbus TBOX
@@ -157,8 +180,7 @@ DA_DiscreteOutput DY_010 = DA_DiscreteOutput(CONTROLLINO_DO1, HIGH);
 DA_DiscreteOutput DY_011 = DA_DiscreteOutput(CONTROLLINO_DO2, HIGH);
 
 // Status LED
-DA_DiscreteOutput SI_001 = DA_DiscreteOutput(CONTROLLINO_DO7, HIGH );
-
+DA_DiscreteOutput SI_001 = DA_DiscreteOutput(CONTROLLINO_DO7, HIGH);
 
 
 // 0-24V
@@ -220,7 +242,6 @@ void onTemperatureRead()
 
 void setup()
 {
-
   MCUSR = 0; // clear existing watchdog timer presets
   temperatureMgr.setPollingInterval(5000);
   temperatureMgr.setBlockingRead(false);
@@ -234,23 +255,33 @@ void setup()
 
   temperatureMgr.init();
 
+  Serial2.begin(9600);
+  atlasSensorMgr.init();
+  atlasSensorMgr.setPollingInterval(10000); // ms
+  atlasSensorMgr.setEnabled(false);
+
+
   EEPROMLoadConfig();
-
-
   Ethernet.begin(currentMAC, currentIP, currentGateway, currentSubnet);
+  remoteCommandHandler.init();
+  remoteCommandHandler.addCommandHandler( DA_TCP_COMMAND_GROUP_ATLAS,
+                                          remoteAtlasCommandHandler);
+  remoteCommandHandler.addCommandHandler(DA_TCP_COMMAND_GROUP_REMOTE,
+                                         remoteDeviceCommandHandler);
+  remoteCommandHandler.addCommandHandler(  DA_TCP_COMMAND_GROUP_HELP,
+                                             remoteHelpCommandHandler);
+  remoteCommandHandler.addCommandHandler(  DA_TCP_COMMAND_GROUP_ONEWIRE,
+                                           remoteOneWireCommandHandler);
   CI_001.setOnEdgeEvent(&onRestoreDefaults);
   CI_001.setEnabled(true);
 
   // FT_001.setUnits(true);
 
   ENABLE_FT001_SENSOR_INTERRUPTS();
-
 }
 
 void loop()
 {
-
-
   MBSlave.MbsRun();
 
   refreshHostReads();
@@ -262,7 +293,8 @@ void loop()
   KI_001.refresh();
   KI_004.refresh();
   refreshTimerOutputs();
-
+  atlasSensorMgr.refresh();
+  remoteCommandHandler.refresh();
 }
 
 void refreshAnalogs()
@@ -298,6 +330,7 @@ void onFlowCalc()
 
   FT_001.end();
   SI_001.toggle();
+
   // FT_001.serialize(tracePort, true);
   FT_001.begin();
   ENABLE_FT001_SENSOR_INTERRUPTS();
@@ -331,7 +364,6 @@ void onRestoreDefaults(bool aValue, int aPin)
   EEPROMLoadConfig();
   Ethernet.begin(currentMAC, currentIP, currentGateway, currentSubnet);
 }
-
 
 /**
  * [byteSwap16 swap bytes in 16 bit word]
@@ -453,21 +485,29 @@ void doCheckForRescanOneWire()
   CY_002 = MBSlave.GetBit(CW_CY_002);
 }
 
+
+void rebootDevice()
+{
+  #ifdef IO_DEBUG
+  *tracePort << "rebooting..." << endl;
+  #endif // ifdef IO_DEBUG
+  wdt_enable(WDTO_15MS); // turn on the WatchDog
+
+  for (;;) {}
+
+}
+
 void doCheckRebootDevice()
 {
   uint8_t bitState = detectTransition(MBSlave.GetBit(CW_CY_004), CY_004);
 
   if (bitState == BIT_RISING_EDGE)
   {
-
-    #ifdef IO_DEBUG
-    *tracePort << "rebooting..." << endl;
-    #endif // ifdef IO_DEBUG
-    wdt_enable(WDTO_15MS); // turn on the WatchDog
-    for(;;) { }
+  rebootDevice();
   }
   CY_004 = MBSlave.GetBit(CW_CY_004);
 }
+
 void refreshHostReads()
 {
   MBSlave.MbData[HR_TI_001] =     (int)(temperatureMgr.getTemperature(0) * 10.0);
@@ -486,11 +526,15 @@ void refreshHostReads()
   MBSlave.MbData[HR_AI_006] =     AI_006.getRawSample();
   MBSlave.MbData[HR_AI_007] =     AI_007.getRawSample();
 
-  MBSlave.MbData[HR_DY_007_OFCV] = (uint16_t)(DY_007.getCurrentInactiveDuration() / 1000);
-  MBSlave.MbData[HR_DY_007_ONCV] = (uint16_t)(DY_007.getCurrentActiveDuration() / 1000);
+  MBSlave.MbData[HR_DY_007_OFCV] =
+    (uint16_t)(DY_007.getCurrentInactiveDuration() / 1000);
+  MBSlave.MbData[HR_DY_007_ONCV] =
+    (uint16_t)(DY_007.getCurrentActiveDuration() / 1000);
 
-  MBSlave.MbData[HR_DY_008_OFCV] = (uint16_t)(DY_008.getCurrentInactiveDuration() / 1000);
-  MBSlave.MbData[HR_DY_008_ONCV] = (uint16_t)(DY_008.getCurrentActiveDuration()  / 1000);
+  MBSlave.MbData[HR_DY_008_OFCV] =
+    (uint16_t)(DY_008.getCurrentInactiveDuration() / 1000);
+  MBSlave.MbData[HR_DY_008_ONCV] =
+    (uint16_t)(DY_008.getCurrentActiveDuration()  / 1000);
 
   // MBSlave.SetBit(CS_DI_000, digitalRead(CONTROLLINO_DI0));
 
@@ -702,26 +746,28 @@ void EEPROMWriteCurrentIPs()
   EEPROM.put(    EEPROM_MAC_ADDR, currentMAC);
 }
 
-#ifdef IO_DEBUG
-void printByteArray(uint8_t anArray[], uint8_t aSize)
+void EEPromWriteOneWireMaps()
 {
-  *tracePort << "{";
+
+  EEPROM.put(EEPROM_ONE_WIRE_MAP, temperatureMgr.oneWireTemperatureMap);
+}
+
+void printByteArray(uint8_t anArray[], uint8_t aSize, Stream *aOutputStream)
+{
+  *aOutputStream << "{";
 
   for (uint8_t i = 0; i < aSize; i++)
   {
-    *tracePort << "0x";
+    *aOutputStream << "0x";
 
     if (anArray[i] < 16) *tracePort << '0';
 
-    *tracePort << _HEX(anArray[i]);
+    *aOutputStream << _HEX(anArray[i]);
 
     if (i < aSize - 1) *tracePort << ",";
   }
-  *tracePort << "}";
+  *aOutputStream << "}";
 }
-
-#endif // ifdef IO_DEBUG
-
 
 void EEPROMLoadConfig()
 
@@ -747,13 +793,14 @@ void EEPROMLoadConfig()
   currentSubnet = temp32;
 
   EEPROM.get(    EEPROM_MAC_ADDR, currentMAC);
+  EEPROM.get(EEPROM_ONE_WIRE_MAP, temperatureMgr.oneWireTemperatureMap);
 
     #ifdef IO_DEBUG
   *tracePort << "currentIP:" << currentIP << endl;
   *tracePort << "currentGateway:" << currentGateway << endl;
   *tracePort << "currentSubnet:" << currentSubnet << endl;
 
-  printByteArray(currentMAC, 6);
+  printByteArray(currentMAC, 6, tracePort);
 
     #endif // ifdef IO_DEBUG
 }
@@ -770,6 +817,179 @@ void EEPROMWriteDefaultConfig()
   EEPROM.put(EEPROM_GATEWAY_ADDR, temp32);
   temp32 = defaultSubnet;
   EEPROM.put( EEPROM_SUBNET_ADDR, temp32);
+  temperatureMgr.resetMaps();
+  EEPromWriteOneWireMaps();
+}
 
-  EEPROM.put(    EEPROM_MAC_ADDR, defaultMAC);
+void remoteAtlasCommandHandler(uint8_t argc, char **argv, Stream *aOutputStream)
+{
+  char command = argv[0][0];
+
+  switch (command) {
+  case 's':
+
+    if (argc == 3)
+    {
+      uint8_t channel = atoi(argv[1]);
+
+      if ((channel >= 0) && (channel < (DA_ATLAS_MAX_CHANNELS)))
+      {
+        char atlasrxBuff[DA_ATLAS_RX_BUF_SZ];
+        atlasSensorMgr.sendRaw(channel, argv[2], atlasrxBuff, 800);
+        *aOutputStream << F("Reply:")  << atlasrxBuff << endl;
+      }
+      else *aOutputStream << F("Invalid Channel:") << channel << endl;
+    }
+    else *aOutputStream << F("Unrecongized format for command")  << endl;
+    break;
+
+  case 'd':
+
+    if (argc == 1)
+    {
+      for (int i = 0; i < DA_ATLAS_MAX_CHANNELS;
+           i++) *aOutputStream << "Sensor[" << i << "] Type:" <<
+          atlasSensorMgr.getSensorType(i) << " cached value:" <<
+          atlasSensorMgr.getCachedValue(i) << endl;
+    }
+    else *aOutputStream << F("Unrecongized format for command")  << endl;
+    break;
+
+  default:
+    *aOutputStream << F("Invalid Command for Atlas")  << endl;
+  }
+}
+
+void remoteDeviceCommandHandler(uint8_t argc, char  **argv, Stream *aOutputStream)
+{
+  char command = argv[0][0];
+
+  switch (command) {
+  case 'i':
+
+    *aOutputStream << F("TODO set IP:")  << endl;
+
+    break;
+    case 'r':
+
+      if (argc == 1)
+      {
+        *aOutputStream << F("reseting to defaults. Closing Client Connection.") << endl;
+        onRestoreDefaults(CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_11,0 );
+        rebootDevice();
+      }
+      else *aOutputStream << F("Unrecongized format for command")  << endl;
+      break;
+  case 'd':
+
+    if (argc == 1)
+    {
+      *aOutputStream << F("Version:") << APP_MAJOR << "." << APP_MINOR << "." <<
+        APP_PATCH << endl;
+      *aOutputStream << F("Device Type:") << DEVICE_TYPE << endl;
+      *aOutputStream << F("currentIP:") << currentIP << endl;
+      *aOutputStream << F("currentGateway:") << currentGateway << endl;
+      *aOutputStream << F("currentSubnet:") << currentSubnet << endl;
+      *aOutputStream << F("MAC Address:");
+      printByteArray(currentMAC, 6, aOutputStream);
+      *aOutputStream << endl;
+    }
+    else *aOutputStream << F("Unrecognized format for command")  << endl;
+    break;
+
+  default:
+    *aOutputStream << F("Invalid Command for Remote")  << endl;
+  }
+
+  /*
+     for (int i = 0; i < argc; i++)
+     {
+      aOutputStream->print("Arg ");
+      aOutputStream->print(     i);
+      aOutputStream->print(  ": ");
+      aOutputStream->println(argv[i]);
+     }
+   */
+}
+
+void remoteHelpCommandHandler(uint8_t argc,
+                              char  **argv,
+                              Stream *aOutputStream)
+{
+  *aOutputStream << F("Atlas Group") << endl;
+  *aOutputStream << F("  Send Raw Commands to Altas Sensor:");
+  *aOutputStream << F(" atlas s <channel> <raw sensor command>") << endl;
+  *aOutputStream << F("  Display Current Sensor Cached Values:");
+  *aOutputStream << F(" atlas d ") << endl;
+
+  *aOutputStream << F("Remote Group") << endl;
+  *aOutputStream << F("  Display General Remote Device Info:");
+  *aOutputStream << F(" remote d") << endl;
+  *aOutputStream << F("  Change Serial Port Baud Rate:");
+  *aOutputStream << F("remote b <baud> TODO ") << endl;
+  *aOutputStream << F("  Change IP:");
+  *aOutputStream << F("remote i <IP> TODO ") << endl;
+  *aOutputStream << F("  Change Gateway:");
+  *aOutputStream << F("remote g <gateway> TODO ") << endl;
+  *aOutputStream << F("  Change Subnet Mask:");
+  *aOutputStream << F("remote s <Subnet Mask> TODO ") << endl;
+  *aOutputStream << F("  Change MAC Address:");
+  *aOutputStream << F("remote m <MAC> TODO ") << endl;
+  *aOutputStream << F("  Reset to Defaults:");
+  *aOutputStream << F("remote r") << endl;
+
+  *aOutputStream << F("1-Wire Group") << endl;
+  *aOutputStream << F("  Display Current 1-Wire Info:");
+  *aOutputStream << F(" 1wire d TODO") << endl;
+  *aOutputStream << F("  Map 1-Wire Temperature x to sensore position y:");
+  *aOutputStream << F(" 1wire m <x> <y>") << endl;
+}
+
+
+
+
+void remoteOneWireCommandHandler(uint8_t argc, char  **argv, Stream *aOutputStream)
+{
+  char command = argv[0][0];
+
+  switch (command) {
+  case 'm':
+
+    if (argc == 3)
+    {
+      uint8_t x = atoi(argv[1]);
+      uint8_t y = atoi(argv[2]);
+      if( temperatureMgr.mapSensor(x, y ))
+      {
+          EEPromWriteOneWireMaps();
+          temperatureMgr.serialize(tracePort, true);
+      }
+      else *aOutputStream << F("x and|or y out of range:") << " x:" << x << " y:" << y << endl;
+    }
+    else *aOutputStream << F("Unrecongized format for command")  << endl;
+    break;
+
+  case 's':
+
+    if (argc == 1)
+    {
+
+        temperatureMgr.serialize(aOutputStream, true);
+    }
+    else *aOutputStream << F("Unrecognized format for command")  << endl;
+    break;
+
+  default:
+    *aOutputStream << F("Invalid Command for 1Wire")  << endl;
+  }
+
+  /*
+     for (int i = 0; i < argc; i++)
+     {
+      aOutputStream->print("Arg ");
+      aOutputStream->print(     i);
+      aOutputStream->print(  ": ");
+      aOutputStream->println(argv[i]);
+     }
+   */
 }

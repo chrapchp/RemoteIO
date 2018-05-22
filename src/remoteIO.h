@@ -22,7 +22,7 @@
 #define APP_MAJOR 0
 #define APP_MINOR 0
 #define APP_PATCH 1
-
+#define DEVICE_TYPE 'N' // Nutrient Center N or Growing Chamber G
 #define APP_BUILD_DATE 1523558276L
 
 #define BIT_NO_CHANGE 0
@@ -32,8 +32,20 @@
 #ifdef CONTROLLINO_BUILD
   # define CONTROLLINO_MAXI_AUTOMATION
   # include <Controllino.h>
+  // Atlas serial 8:1 control pins
+  # define S1 CONTROLLINO_PIN_HEADER_DIGITAL_OUT_12
+  # define S2 CONTROLLINO_PIN_HEADER_DIGITAL_OUT_13
+  # define S3 CONTROLLINO_PIN_HEADER_DIGITAL_OUT_14
+#else
+  // Atlas serial 8:1 control pins
+  # define S1 7
+  # define S2 8
+  # define S3 9
 #endif // ifdef CONTROLLINO_BUILD
 
+const uint8_t s1 = S1;
+const uint8_t s2 = S2;
+const uint8_t s3 = S3;
 
 // IP addressing used whent nothing stored in EEPROM
 #define DEFAULT_IP_ADDRESS   192, 168, 1, 253 // 192.168.1.253
@@ -55,11 +67,13 @@
 #define EEPROM_GATEWAY_ADDR EEPROM_IP_ADDR  + sizeof(uint32_t)
 #define EEPROM_SUBNET_ADDR EEPROM_GATEWAY_ADDR + sizeof(uint32_t)
 #define EEPROM_MAC_ADDR EEPROM_SUBNET_ADDR + sizeof(uint32_t)
+#define EEPROM_ONE_WIRE_MAP EEPROM_MAC_ADDR + sizeof(uint32_t)
 
 #define HEART_BEAT_PERIOD 5000     // ms
 
 // flow meter constants
 #define FLOW_CALC_PERIOD_SECONDS 1 // flow rate calc period s
+
 #define FT001_SENSOR_INTERUPT_PIN CONTROLLINO_SCREW_TERMINAL_INT_00
 
 #define ENABLE_FT001_SENSOR_INTERRUPTS() attachInterrupt(digitalPinToInterrupt(        \
