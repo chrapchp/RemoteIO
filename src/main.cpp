@@ -216,7 +216,7 @@ DA_NonBlockingDelay KI_004 = DA_NonBlockingDelay(FLOW_CALC_PERIOD_SECONDS * 1000
 DA_OneWireDallasMgr temperatureMgr = DA_OneWireDallasMgr(WIRE_BUS_PIN);
 
 // Debug Serial port
-Stream *tracePort = &Serial;
+Stream *aOutputStream = &Serial;
 
 // commands from host that need to be onshots
 bool CY_006 = false; // update IP
@@ -227,12 +227,12 @@ bool CY_004 = false; // reboot remote I/O
     #ifdef IO_DEBUG
 void onTemperatureRead()
 {
-  *tracePort << "New Sample" << endl;
+  *aOutputStream << "New Sample" << endl;
 
   for (int i = 0; i < DA_MAX_ONE_WIRE_SENSORS; i++)
   {
     // temperatureMgr.enableSensor(i);
-    *tracePort << "idx:" << i << "temp:" << temperatureMgr.getTemperature(i) <<
+    *aOutputStream << "idx:" << i << "temp:" << temperatureMgr.getTemperature(i) <<
       endl;
   }
 }
@@ -248,9 +248,9 @@ void setup()
   temperatureMgr.scanSensors();
     #ifdef IO_DEBUG
     Serial.begin(9600);
-//  tracePort->begin(9600);
+//  aOutputStream->begin(9600);
 
-  temperatureMgr.serialize(tracePort, true);
+  temperatureMgr.serialize(aOutputStream, true);
   temperatureMgr.setOnPollCallBack(onTemperatureRead);
       #endif // ifdef PROCESS_TERMINAL
 
@@ -332,7 +332,7 @@ void onFlowCalc()
   FT_001.end();
   SI_001.toggle();
 
-  // FT_001.serialize(tracePort, true);
+  // FT_001.serialize(aOutputStream, true);
   FT_001.begin();
   ENABLE_FT001_SENSOR_INTERRUPTS();
 }
@@ -357,7 +357,7 @@ void onHeartBeat()
 void onRestoreDefaults(bool aValue, int aPin)
 {
     #ifdef IO_DEBUG
-  *tracePort << "onRestoreDefaults()" << endl;
+  *aOutputStream << "onRestoreDefaults()" << endl;
     #endif // ifdef IO_DEBUG
 
 
@@ -480,7 +480,7 @@ void doCheckForRescanOneWire()
   {
     temperatureMgr.scanSensors();
     #ifdef IO_DEBUG
-    temperatureMgr.serialize(tracePort, true);
+    temperatureMgr.serialize(aOutputStream, true);
     #endif // ifdef IO_DEBUG
   }
   CY_002 = MBSlave.GetBit(CW_CY_002);
@@ -490,7 +490,7 @@ void doCheckForRescanOneWire()
 void rebootDevice()
 {
   #ifdef IO_DEBUG
-  *tracePort << "rebooting..." << endl;
+  *aOutputStream << "rebooting..." << endl;
   #endif // ifdef IO_DEBUG
   wdt_enable(WDTO_15MS); // turn on the WatchDog
 
@@ -650,7 +650,7 @@ void processHostWrites()
   DI_002.setDebounceTime(MBSlave.MbData[HW_DI_002_DT]);
   DI_003.setDebounceTime(MBSlave.MbData[HW_DI_003_DT]);
 
-  // DI_003.serialize(tracePort, true);
+  // DI_003.serialize(aOutputStream, true);
   // AOs
   AY_000.setEnabled(MBSlave.GetBit(CW_AY_000_EN));
   AY_001.setEnabled(MBSlave.GetBit(CW_AY_001_EN));
@@ -685,7 +685,7 @@ void processHostWrites()
   // Drive AOs from master values
   AY_000.writeAO(MBSlave.MbData[HW_AY_000]);
 
-  // AY_000.serialize( tracePort, true);
+  // AY_000.serialize( aOutputStream, true);
   AY_001.writeAO(MBSlave.MbData[HW_AY_001]);
 
   // DO TImer presets controllino: Active High reverse
@@ -761,11 +761,11 @@ void printByteArray(uint8_t anArray[], uint8_t aSize, Stream *aOutputStream)
   {
     *aOutputStream << "0x";
 
-    if (anArray[i] < 16) *tracePort << '0';
+    if (anArray[i] < 16) *aOutputStream << '0';
 
     *aOutputStream << _HEX(anArray[i]);
 
-    if (i < aSize - 1) *tracePort << ",";
+    if (i < aSize - 1) *aOutputStream << ",";
   }
   *aOutputStream << "}";
 }
@@ -797,11 +797,11 @@ void EEPROMLoadConfig()
   EEPROM.get(EEPROM_ONE_WIRE_MAP, temperatureMgr.oneWireTemperatureMap);
 
     #ifdef IO_DEBUG
-  *tracePort << "currentIP:" << currentIP << endl;
-  *tracePort << "currentGateway:" << currentGateway << endl;
-  *tracePort << "currentSubnet:" << currentSubnet << endl;
+  *aOutputStream << "currentIP:" << currentIP << endl;
+  *aOutputStream << "currentGateway:" << currentGateway << endl;
+  *aOutputStream << "currentSubnet:" << currentSubnet << endl;
 
-  printByteArray(currentMAC, 6, tracePort);
+  printByteArray(currentMAC, 6, aOutputStream);
 
     #endif // ifdef IO_DEBUG
 }
@@ -941,7 +941,7 @@ void remoteHelpCommandHandler(uint8_t argc,
 
   *aOutputStream << F("1-Wire Group") << endl;
   *aOutputStream << F("  Display Current 1-Wire Info:");
-  *aOutputStream << F(" 1wire d TODO") << endl;
+  *aOutputStream << F(" 1wire d ") << endl;
   *aOutputStream << F("  Map 1-Wire Temperature x to sensore position y:");
   *aOutputStream << F(" 1wire m <x> <y>") << endl;
 }
@@ -963,14 +963,14 @@ void remoteOneWireCommandHandler(uint8_t argc, char  **argv, Stream *aOutputStre
       if( temperatureMgr.mapSensor(x, y ))
       {
           EEPromWriteOneWireMaps();
-          temperatureMgr.serialize(tracePort, true);
+          temperatureMgr.serialize(aOutputStream, true);
       }
       else *aOutputStream << F("x and|or y out of range:") << " x:" << x << " y:" << y << endl;
     }
     else *aOutputStream << F("Unrecongized format for command")  << endl;
     break;
 
-  case 's':
+  case 'd':
 
     if (argc == 1)
     {
