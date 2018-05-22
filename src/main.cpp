@@ -19,7 +19,7 @@
 #include <EEPROM.h>
 #include <MgsModbus.h> // cchange memory size here
 
-#include <HardwareSerial.h>
+
 #include <Streaming.h>
 
 
@@ -216,7 +216,7 @@ DA_NonBlockingDelay KI_004 = DA_NonBlockingDelay(FLOW_CALC_PERIOD_SECONDS * 1000
 DA_OneWireDallasMgr temperatureMgr = DA_OneWireDallasMgr(WIRE_BUS_PIN);
 
 // Debug Serial port
-HardwareSerial *tracePort = &Serial;
+Stream *tracePort = &Serial;
 
 // commands from host that need to be onshots
 bool CY_006 = false; // update IP
@@ -247,7 +247,8 @@ void setup()
   temperatureMgr.setBlockingRead(false);
   temperatureMgr.scanSensors();
     #ifdef IO_DEBUG
-  tracePort->begin(9600);
+    Serial.begin(9600);
+//  tracePort->begin(9600);
 
   temperatureMgr.serialize(tracePort, true);
   temperatureMgr.setOnPollCallBack(onTemperatureRead);
