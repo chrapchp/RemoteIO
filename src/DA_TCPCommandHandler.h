@@ -10,17 +10,17 @@
  *  Not all information/control is implemented via Modbus
  *  A simple command line approach that handles
  *
- *   atlas:x:Command	Set serial command to atlas sensor on channel x
- *   remote:XXX	change atlas port speed
- *   1wire:echo	display current 1-wire data
- *   atlas:echo	display current Atlas sensor values
- *   atlas:suspend | resume	display current atlas data
- *   remote:info	general info about remote I/O
- *   remote:help
- *   remote:IP xxx	set IP
- *   remote:gateway xxx	set gateway
- *   remote:subnet xxx	set subnet
- *   remote:MAC xxx	set MAC
+ *   atlas x Command	Set serial command to atlas sensor on channel x
+ *   remote XXX	change atlas port speed
+ *   1wire echo	display current 1-wire data
+ *   atlas echo	display current Atlas sensor values
+ *   atlas suspend | resume	display current atlas data
+ *   remote info	general info about remote I/O
+ *   help
+ *   remote IP xxx	set IP
+ *   remote gateway xxx	set gateway
+ *   remote subnet xxx	set subnet
+ *   remote MAC xxx	set MAC
 
  *
  *    FUTURE: replace with HTTP interface
@@ -43,7 +43,7 @@
 struct _remoteIOCommandEntry
 {
   char commandGroup[7];
-  void (*commandHandler)(int    argc,
+  void (*commandHandler)(uint8_t    argc,
                char **argv, Stream* aOutputStream);
 };
 

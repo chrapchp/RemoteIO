@@ -38,10 +38,19 @@
 
 #include "DA_TCPCommandHandler.h"
 #include "remoteIO.h"
+#include "Controllino.h"
 
 
 char atlasrxBuff[DA_ATLAS_RX_BUF_SZ];
-DA_AtlasMgr atlasSensorMgr                = DA_AtlasMgr(Serial2, s1, s2, s3);
+
+
+// Atlas serial 8:1 control pins
+#if defined(NC_BUILD)
+DA_AtlasMgr atlasSensorMgr = DA_AtlasMgr(Serial2,
+                                         CONTROLLINO_PIN_HEADER_DIGITAL_OUT_12,
+                                         CONTROLLINO_PIN_HEADER_DIGITAL_OUT_13,
+                                         CONTROLLINO_PIN_HEADER_DIGITAL_OUT_14);
+#endif // if defined(NC_BUILD)
 DA_TCPCommandHandler remoteCommandHandler = DA_TCPCommandHandler();
 
 
@@ -78,13 +87,14 @@ byte pendingMAC[] = { DEFAULT_PENDING_MAC_ADDRESS };
 // #define IO_DEBUG 2
 
 // forward Declarations
-void onFT_001_PulseIn();
+void onXT_006_PulseIn();
+void onXT_007_PulseIn();
 void processHostWrites();
 void refreshHostReads();
 void refreshModbusRegisters();
 void refreshAnalogs();
 void refreshDiscreteInputs();
-void refreshTimerOutputs();
+
 void onRestoreDefaults(bool aValue,
                        int  aPin);
 void onHeartBeat();
@@ -105,6 +115,7 @@ void EEPROMWriteDefaultConfig();
 void doCheckMACChange();
 void doCheckRebootDevice();
 void rebootDevice();
+
 // remote command handlers
 void remoteAtlasCommandHandler(uint8_t argc,
                                char  **argv,
@@ -132,9 +143,13 @@ uint32_t byteSwap32(uint32_t aValue);
 uint16_t byteSwap16(uint16_t aValue);
 
 
-DA_FlowMeter FT_001(FT001_SENSOR_INTERUPT_PIN, FLOW_CALC_PERIOD_SECONDS);
+DA_FlowMeter XT_006(XT006_SENSOR_INTERUPT_PIN, FLOW_CALC_PERIOD_SECONDS);
+DA_FlowMeter XT_007(XT007_SENSOR_INTERUPT_PIN, FLOW_CALC_PERIOD_SECONDS);
 
 // Discrete Inputs
+///
+
+
 DA_DiscreteInput DI_000 = DA_DiscreteInput(CONTROLLINO_DI0,
                                            DA_DiscreteInput::None,
                                            false);
@@ -147,54 +162,102 @@ DA_DiscreteInput DI_002 = DA_DiscreteInput(CONTROLLINO_DI2,
 DA_DiscreteInput DI_003 = DA_DiscreteInput(CONTROLLINO_DI3,
                                            DA_DiscreteInput::None,
                                            false);
+DA_DiscreteInput DI_004 = DA_DiscreteInput(
+  CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_08,
+  DA_DiscreteInput::None,
+  false);
+DA_DiscreteInput DI_005 = DA_DiscreteInput(
+  CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_09,
+  DA_DiscreteInput::None,
+  false);
+DA_DiscreteInput DI_006 = DA_DiscreteInput(
+  CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_10,
+  DA_DiscreteInput::None,
+  false);
+DA_DiscreteInput DI_007 = DA_DiscreteInput(
+  CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_11,
+  DA_DiscreteInput::None,
+  false);
+DA_DiscreteInput DI_008 = DA_DiscreteInput(CONTROLLINO_A12,
+                                           DA_DiscreteInput::None,
+                                           false);
+DA_DiscreteInput DI_009 = DA_DiscreteInput(CONTROLLINO_A13,
+                                           DA_DiscreteInput::None,
+                                           false);
+
 
 // reset IP to defaults
 DA_DiscreteInput CI_001 = DA_DiscreteInput(
-  CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_11,
-  DA_DiscreteInput::FallingEdgeDetect,
+  CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_07,
+  DA_DiscreteInput::None,
   false);
+
 
 // Relay Outputs
 //
-DA_DiscreteOutput DY_000 = DA_DiscreteOutput(CONTROLLINO_RELAY_00, HIGH);
-DA_DiscreteOutput DY_001 = DA_DiscreteOutput(CONTROLLINO_RELAY_01, HIGH);
-DA_DiscreteOutput DY_002 = DA_DiscreteOutput(CONTROLLINO_RELAY_02, HIGH);
-DA_DiscreteOutput DY_003 = DA_DiscreteOutput(CONTROLLINO_RELAY_03, HIGH);
-DA_DiscreteOutput DY_004 = DA_DiscreteOutput(CONTROLLINO_RELAY_04, HIGH);
-DA_DiscreteOutput DY_005 = DA_DiscreteOutput(CONTROLLINO_RELAY_05, HIGH);
-DA_DiscreteOutput DY_006 = DA_DiscreteOutput(CONTROLLINO_RELAY_06, HIGH);
+DA_DiscreteOutput DY_000 = DA_DiscreteOutput(CONTROLLINO_RELAY_00,  HIGH);
+DA_DiscreteOutput DY_001 = DA_DiscreteOutput(CONTROLLINO_RELAY_01,  HIGH);
+DA_DiscreteOutput DY_002 = DA_DiscreteOutput(CONTROLLINO_RELAY_02,  HIGH);
+DA_DiscreteOutput DY_003 = DA_DiscreteOutput(CONTROLLINO_RELAY_03,  HIGH);
+DA_DiscreteOutput DY_004 = DA_DiscreteOutput(CONTROLLINO_RELAY_04,  HIGH);
+DA_DiscreteOutput DY_005 = DA_DiscreteOutput(CONTROLLINO_RELAY_05,  HIGH);
+DA_DiscreteOutput DY_006 = DA_DiscreteOutput(CONTROLLINO_RELAY_06,  HIGH);
+DA_DiscreteOutput DY_007 = DA_DiscreteOutput(CONTROLLINO_RELAY_07,  HIGH);
+DA_DiscreteOutput DY_008 = DA_DiscreteOutput(CONTROLLINO_RELAY_08,  HIGH);
+DA_DiscreteOutput DY_009 = DA_DiscreteOutput(CONTROLLINO_RELAY_07,  HIGH);
+DA_DiscreteOutput DY_010 = DA_DiscreteOutput(CONTROLLINO_DO0,  HIGH);
+DA_DiscreteOutput DY_011 = DA_DiscreteOutput(CONTROLLINO_DO1,  HIGH);
+DA_DiscreteOutput DY_012 = DA_DiscreteOutput(CONTROLLINO_DO2,  HIGH);
+DA_DiscreteOutput DY_013 = DA_DiscreteOutput(CONTROLLINO_DO3,  HIGH);
+DA_DiscreteOutput DY_014 = DA_DiscreteOutput(CONTROLLINO_DO4,  HIGH);
+DA_DiscreteOutput DY_015 = DA_DiscreteOutput(CONTROLLINO_DO5,  HIGH);
+DA_DiscreteOutput DY_016 = DA_DiscreteOutput(CONTROLLINO_DO6,  HIGH);
+DA_DiscreteOutput DY_017 = DA_DiscreteOutput(CONTROLLINO_DO7,  HIGH);
+DA_DiscreteOutput DY_018 = DA_DiscreteOutput(
+  CONTROLLINO_PIN_HEADER_DIGITAL_OUT_14,
+  HIGH);
 
-// Timer based relay outputs
-DA_DiscreteOutputTmr DY_007 = DA_DiscreteOutputTmr(CONTROLLINO_RELAY_07,
-                                                   HIGH,
-                                                   DEFAULT_TMR_ON_DURATION,
-                                                   DEFAULT_TMR_OFF_DURATION);
-DA_DiscreteOutputTmr DY_008 = DA_DiscreteOutputTmr(CONTROLLINO_RELAY_08,
-                                                   HIGH,
-                                                   DEFAULT_TMR_ON_DURATION,
-                                                   DEFAULT_TMR_OFF_DURATION);
-
-// Solid State Outputs
-DA_DiscreteOutput DY_009 = DA_DiscreteOutput(CONTROLLINO_DO0, HIGH);
-DA_DiscreteOutput DY_010 = DA_DiscreteOutput(CONTROLLINO_DO1, HIGH);
-DA_DiscreteOutput DY_011 = DA_DiscreteOutput(CONTROLLINO_DO2, HIGH);
-
-// Status LED
-DA_DiscreteOutput SI_001 = DA_DiscreteOutput(CONTROLLINO_DO7, HIGH);
-
+#if not defined(NC_BUILD)
+DA_DiscreteOutput DY_019 = DA_DiscreteOutput(
+  CONTROLLINO_PIN_HEADER_DIGITAL_OUT_13,
+  HIGH);
+DA_DiscreteOutput DY_020 = DA_DiscreteOutput(
+  CONTROLLINO_PIN_HEADER_DIGITAL_OUT_12,
+  HIGH);
+DA_DiscreteOutput DY_021 = DA_DiscreteOutput(
+  CONTROLLINO_PIN_HEADER_DIGITAL_OUT_15,
+  HIGH);
+#endif // if not defined(NC_BUILD)
 
 // 0-24V
-DA_AnalogInput AI_000 =  DA_AnalogInput(CONTROLLINO_A0, 0.0, 1024.0);
-DA_AnalogInput AI_001 =  DA_AnalogInput(CONTROLLINO_A1, 0.0, 1024.0);
-DA_AnalogInput AI_002 =  DA_AnalogInput(CONTROLLINO_A2, 0.0, 1024.0);
-DA_AnalogInput AI_003 =  DA_AnalogInput(CONTROLLINO_A3, 0.0, 1024.0);
-DA_AnalogInput AI_004 =  DA_AnalogInput(CONTROLLINO_A4, 0.0, 1024.0);
-DA_AnalogInput AI_005 =  DA_AnalogInput(CONTROLLINO_A5, 0.0, 1024.0);
-
-// 0-10 V
-DA_AnalogInput AI_006 =  DA_AnalogInput(CONTROLLINO_A12, 0.0, 1024.0);
-DA_AnalogInput AI_007 =  DA_AnalogInput(CONTROLLINO_A13, 0.0, 1024.0);
-
+DA_AnalogInput AI_000 =  DA_AnalogInput(
+  CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_00,
+  0.0,
+  1024.0);
+DA_AnalogInput AI_001 =  DA_AnalogInput(
+  CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_01,
+  0.0,
+  1024.0);
+DA_AnalogInput AI_002 =  DA_AnalogInput(
+  CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_02,
+  0.0,
+  1024.0);
+DA_AnalogInput AI_003 =  DA_AnalogInput(
+  CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_03,
+  0.0,
+  1024.0);
+DA_AnalogInput AI_004 =  DA_AnalogInput(
+  CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_04,
+  0.0,
+  1024.0);
+DA_AnalogInput AI_005 =  DA_AnalogInput(
+  CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_05,
+  0.0,
+  1024.0);
+DA_AnalogInput AI_006 =  DA_AnalogInput(
+  CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_06,
+  0.0,
+  1024.0);
 
 // 0-10 V analog outputs
 DA_AnalogOutput AY_000 = DA_AnalogOutput(CONTROLLINO_AO0);
@@ -202,6 +265,7 @@ DA_AnalogOutput AY_001 = DA_AnalogOutput(CONTROLLINO_AO1);
 
 // App Version
 uint16_t KI_003 = APP_MAJOR << 8 | APP_MINOR << 4 | APP_PATCH;
+uint16_t KI_005 = DEVICE_TYPE;
 
 
 // timer for heart beat and potentially trigger for other operations
@@ -232,7 +296,8 @@ void onTemperatureRead()
   for (int i = 0; i < DA_MAX_ONE_WIRE_SENSORS; i++)
   {
     // temperatureMgr.enableSensor(i);
-    *aOutputStream << "idx:" << i << "temp:" << temperatureMgr.getTemperature(i) <<
+    *aOutputStream << "idx:" << i << "temp:" <<
+      temperatureMgr.getTemperature(i) <<
       endl;
   }
 }
@@ -247,38 +312,114 @@ void setup()
   temperatureMgr.setBlockingRead(false);
   temperatureMgr.scanSensors();
     #ifdef IO_DEBUG
-    Serial.begin(9600);
-//  aOutputStream->begin(9600);
+  Serial.begin(9600);
+
+  //  aOutputStream->begin(9600);
 
   temperatureMgr.serialize(aOutputStream, true);
   temperatureMgr.setOnPollCallBack(onTemperatureRead);
       #endif // ifdef PROCESS_TERMINAL
 
   temperatureMgr.init();
-
+#if  defined(NC2_BUILD)
+  temperatureMgr.disableMgr();
+#endif // if not defined(NC2_BUILD)
   Serial2.begin(9600);
+  #if defined(NC_BUILD)
   atlasSensorMgr.init();
   atlasSensorMgr.setPollingInterval(10000); // ms
   atlasSensorMgr.setEnabled(false);
-
+#endif // if defined(NC_BUILD)
 
   EEPROMLoadConfig();
   Ethernet.begin(currentMAC, currentIP, currentGateway, currentSubnet);
   remoteCommandHandler.init();
-  remoteCommandHandler.addCommandHandler( DA_TCP_COMMAND_GROUP_ATLAS,
-                                          remoteAtlasCommandHandler);
-  remoteCommandHandler.addCommandHandler(DA_TCP_COMMAND_GROUP_REMOTE,
-                                         remoteDeviceCommandHandler);
-  remoteCommandHandler.addCommandHandler(  DA_TCP_COMMAND_GROUP_HELP,
-                                             remoteHelpCommandHandler);
-  remoteCommandHandler.addCommandHandler(  DA_TCP_COMMAND_GROUP_ONEWIRE,
-                                           remoteOneWireCommandHandler);
+  remoteCommandHandler.addCommandHandler(  DA_TCP_COMMAND_GROUP_ATLAS,
+                                           remoteAtlasCommandHandler);
+  remoteCommandHandler.addCommandHandler( DA_TCP_COMMAND_GROUP_REMOTE,
+                                          remoteDeviceCommandHandler);
+  remoteCommandHandler.addCommandHandler(   DA_TCP_COMMAND_GROUP_HELP,
+                                            remoteHelpCommandHandler);
+  remoteCommandHandler.addCommandHandler(DA_TCP_COMMAND_GROUP_ONEWIRE,
+                                         remoteOneWireCommandHandler);
   CI_001.setOnEdgeEvent(&onRestoreDefaults);
   CI_001.setEnabled(true);
 
+  // DI Debounce times // default is 100ms
+  DI_000.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
+  DI_001.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
+  DI_002.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
+  DI_003.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
+  DI_004.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
+  DI_005.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
+  DI_006.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
+  DI_007.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
+  DI_008.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
+  DI_009.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
+
+
+  // Enable/Disable DOs from master values
+  AI_000.setEnabled(true);
+  AI_001.setEnabled(true);
+  AI_002.setEnabled(true);
+  AI_003.setEnabled(true);
+  AI_004.setEnabled(true);
+  AI_005.setEnabled(true);
+  AI_006.setEnabled(true);
+
+
+  // Enable/Disable DOs from master values
+  // Relays
+
+  DY_000.setEnabled(true);
+  DY_001.setEnabled(true);
+  DY_002.setEnabled(true);
+  DY_003.setEnabled(true);
+  DY_004.setEnabled(true);
+  DY_005.setEnabled(true);
+  DY_006.setEnabled(true);
+  DY_007.setEnabled(true);
+  DY_008.setEnabled(true);
+  DY_009.setEnabled(true);
+  DY_010.setEnabled(true);
+  DY_011.setEnabled(true);
+  DY_012.setEnabled(true);
+  DY_013.setEnabled(true);
+  DY_014.setEnabled(true);
+  DY_015.setEnabled(true);
+  DY_016.setEnabled(true);
+  DY_017.setEnabled(true);
+  DY_018.setEnabled(true);
+  #if not defined(NC_BUILD)
+  DY_019.setEnabled(true);
+  DY_020.setEnabled(true);
+  DY_021.setEnabled(true);
+#endif // if not defined(NC_BUILD)
+
+
+  // DIs
+  DI_000.setEnabled(true);
+  DI_001.setEnabled(true);
+  DI_002.setEnabled(true);
+  DI_003.setEnabled(true);
+  DI_004.setEnabled(true);
+  DI_005.setEnabled(true);
+  DI_006.setEnabled(true);
+  DI_007.setEnabled(true);
+  DI_008.setEnabled(true);
+  DI_009.setEnabled(true);
+
+
+  // DI_003.serialize(aOutputStream, true);
+  // AOs
+  AY_000.setEnabled(true);
+  AY_001.setEnabled(true);
+
+
   // FT_001.setUnits(true);
 
-  ENABLE_FT001_SENSOR_INTERRUPTS();
+  ENABLE_XT006_SENSOR_INTERRUPTS();
+  ENABLE_XT007_SENSOR_INTERRUPTS();
 }
 
 void loop()
@@ -293,8 +434,9 @@ void loop()
   refreshDiscreteInputs();
   KI_001.refresh();
   KI_004.refresh();
-  refreshTimerOutputs();
+    #if defined(NC_BUILD)
   atlasSensorMgr.refresh();
+  #endif // if defined(NC_BUILD)
   remoteCommandHandler.refresh();
 }
 
@@ -307,39 +449,45 @@ void refreshAnalogs()
   AI_004.refresh();
   AI_005.refresh();
   AI_006.refresh();
-  AI_007.refresh();
 }
 
 void refreshDiscreteInputs()
 {
-  DI_000.refresh();
   DI_001.refresh();
   DI_002.refresh();
   DI_003.refresh();
-  CI_001.refresh();
-}
+  DI_004.refresh();
+  DI_005.refresh();
+  DI_006.refresh();
+  DI_007.refresh();
+  DI_008.refresh();
+  DI_009.refresh();
 
-void refreshTimerOutputs()
-{
-  DY_007.refresh();
-  DY_008.refresh();
+  CI_001.refresh();
 }
 
 void onFlowCalc()
 {
-  DISABLE_FT001_SENSOR_INTERRUPTS();
+  DISABLE_XT006_SENSOR_INTERRUPTS();
+  DISABLE_XT007_SENSOR_INTERRUPTS();
 
-  FT_001.end();
-  SI_001.toggle();
+  XT_006.end();
+  XT_006.begin();
 
-  // FT_001.serialize(aOutputStream, true);
-  FT_001.begin();
-  ENABLE_FT001_SENSOR_INTERRUPTS();
+  XT_007.end();
+  XT_007.begin();
+  ENABLE_XT006_SENSOR_INTERRUPTS();
+  ENABLE_XT007_SENSOR_INTERRUPTS();
 }
 
-void onFT_001_PulseIn()
+void onXT_006_PulseIn()
 {
-  FT_001.handleFlowDetection();
+  XT_006.handleFlowDetection();
+}
+
+void onXT_007_PulseIn()
+{
+  XT_007.handleFlowDetection();
 }
 
 void onHeartBeat()
@@ -486,7 +634,6 @@ void doCheckForRescanOneWire()
   CY_002 = MBSlave.GetBit(CW_CY_002);
 }
 
-
 void rebootDevice()
 {
   #ifdef IO_DEBUG
@@ -495,7 +642,6 @@ void rebootDevice()
   wdt_enable(WDTO_15MS); // turn on the WatchDog
 
   for (;;) {}
-
 }
 
 void doCheckRebootDevice()
@@ -504,7 +650,7 @@ void doCheckRebootDevice()
 
   if (bitState == BIT_RISING_EDGE)
   {
-  rebootDevice();
+    rebootDevice();
   }
   CY_004 = MBSlave.GetBit(CW_CY_004);
 }
@@ -525,32 +671,37 @@ void refreshHostReads()
   MBSlave.MbData[HR_AI_004] =     AI_004.getRawSample();
   MBSlave.MbData[HR_AI_005] =     AI_005.getRawSample();
   MBSlave.MbData[HR_AI_006] =     AI_006.getRawSample();
-  MBSlave.MbData[HR_AI_007] =     AI_007.getRawSample();
 
-  MBSlave.MbData[HR_DY_007_OFCV] =
-    (uint16_t)(DY_007.getCurrentInactiveDuration() / 1000);
-  MBSlave.MbData[HR_DY_007_ONCV] =
-    (uint16_t)(DY_007.getCurrentActiveDuration() / 1000);
-
-  MBSlave.MbData[HR_DY_008_OFCV] =
-    (uint16_t)(DY_008.getCurrentInactiveDuration() / 1000);
-  MBSlave.MbData[HR_DY_008_ONCV] =
-    (uint16_t)(DY_008.getCurrentActiveDuration()  / 1000);
-
-  // MBSlave.SetBit(CS_DI_000, digitalRead(CONTROLLINO_DI0));
+#if defined(NC_BUILD)
+  MBSlave.MbData[HR_XT_001] = atlasSensorMgr.getCachedValue(DA_ATLAS_PH);
+  MBSlave.MbData[HR_XT_002] = atlasSensorMgr.getCachedValue(DA_ATLAS_EC);
+  MBSlave.MbData[HR_XT_003] = atlasSensorMgr.getCachedValue(DA_ATLAS_ORB);
+  MBSlave.MbData[HR_XT_004] = atlasSensorMgr.getCachedValue(DA_ATLAS_DO);
+  MBSlave.MbData[HR_XT_005] = atlasSensorMgr.getCachedValue(DA_ATLAS_RTD);
+#endif // if defined(NC_BUILD)
 
   MBSlave.SetBit(CS_DI_000, DI_000.getSample());
   MBSlave.SetBit(CS_DI_001, DI_001.getSample());
   MBSlave.SetBit(CS_DI_002, DI_002.getSample());
   MBSlave.SetBit(CS_DI_003, DI_003.getSample());
+  MBSlave.SetBit(CS_DI_004, DI_004.getSample());
+  MBSlave.SetBit(CS_DI_005, DI_005.getSample());
+  MBSlave.SetBit(CS_DI_006, DI_006.getSample());
+  MBSlave.SetBit(CS_DI_007, DI_007.getSample());
+  MBSlave.SetBit(CS_DI_008, DI_008.getSample());
+  MBSlave.SetBit(CS_DI_009, DI_009.getSample());
 
-  MBSlave.MbData[HR_FI_001_RW] = FT_001.getCurrentPulses();
+
+  MBSlave.MbData[HR_FI_001_RW] = XT_006.getCurrentPulses();
+  MBSlave.MbData[HR_FI_002_RW] = XT_007.getCurrentPulses();
 
   // watchdog current value
   MBSlave.MbData[HR_KI_001] = KI_001_CV;
 
   // App major/minor/patch
   MBSlave.MbData[HR_KI_003] = KI_003;
+
+  MBSlave.MbData[HR_KI_005] = KI_005;
 
   // app build date
   blconvert.val                 = APP_BUILD_DATE;
@@ -609,52 +760,6 @@ void refreshHostReads()
 
 void processHostWrites()
 {
-  // Enable/Disable DOs from master values
-  AI_000.setEnabled(MBSlave.GetBit(CW_AI_000_EN));
-  AI_001.setEnabled(MBSlave.GetBit(CW_AI_001_EN));
-  AI_002.setEnabled(MBSlave.GetBit(CW_AI_002_EN));
-  AI_003.setEnabled(MBSlave.GetBit(CW_AI_003_EN));
-  AI_004.setEnabled(MBSlave.GetBit(CW_AI_004_EN));
-  AI_005.setEnabled(MBSlave.GetBit(CW_AI_005_EN));
-  AI_006.setEnabled(MBSlave.GetBit(CW_AI_006_EN));
-  AI_007.setEnabled(MBSlave.GetBit(CW_AI_007_EN));
-
-  // Enable/Disable DOs from master values
-  // Relays
-
-  DY_000.setEnabled(MBSlave.GetBit(CW_DY_000_EN));
-  DY_001.setEnabled(MBSlave.GetBit(CW_DY_001_EN));
-  DY_003.setEnabled(MBSlave.GetBit(CW_DY_003_EN));
-  DY_004.setEnabled(MBSlave.GetBit(CW_DY_004_EN));
-  DY_005.setEnabled(MBSlave.GetBit(CW_DY_005_EN));
-  DY_006.setEnabled(MBSlave.GetBit(CW_DY_006_EN));
-
-  // DO Timers
-  DY_007.setEnabled(MBSlave.GetBit(CW_DY_007_EN));
-  DY_008.setEnabled(MBSlave.GetBit(CW_DY_008_EN));
-
-  // Solid state
-  DY_009.setEnabled(MBSlave.GetBit(CW_DY_009_EN));
-  DY_010.setEnabled(MBSlave.GetBit(CW_DY_010_EN));
-  DY_011.setEnabled(MBSlave.GetBit(CW_DY_011_EN));
-
-  // DIs
-  DI_000.setEnabled(MBSlave.GetBit(CW_DI_000_EN));
-  DI_001.setEnabled(MBSlave.GetBit(CW_DI_001_EN));
-  DI_002.setEnabled(MBSlave.GetBit(CW_DI_002_EN));
-  DI_003.setEnabled(MBSlave.GetBit(CW_DI_003_EN));
-
-  // DI Debounce times // default is 100ms
-  DI_000.setDebounceTime(MBSlave.MbData[HW_DI_000_DT]);
-  DI_001.setDebounceTime(MBSlave.MbData[HW_DI_001_DT]);
-  DI_002.setDebounceTime(MBSlave.MbData[HW_DI_002_DT]);
-  DI_003.setDebounceTime(MBSlave.MbData[HW_DI_003_DT]);
-
-  // DI_003.serialize(aOutputStream, true);
-  // AOs
-  AY_000.setEnabled(MBSlave.GetBit(CW_AY_000_EN));
-  AY_001.setEnabled(MBSlave.GetBit(CW_AY_001_EN));
-
   // 1-wire Temperatures
   //
   temperatureMgr.setEnabled(MBSlave.GetBit(CW_TI_001_EN), 0);
@@ -675,12 +780,24 @@ void processHostWrites()
   DY_004.write(MBSlave.GetBit(CW_DY_004));
   DY_005.write(MBSlave.GetBit(CW_DY_005));
   DY_006.write(MBSlave.GetBit(CW_DY_006));
-
-
-  // Solid state
+  DY_007.write(MBSlave.GetBit(CW_DY_007));
+  DY_008.write(MBSlave.GetBit(CW_DY_008));
   DY_009.write(MBSlave.GetBit(CW_DY_009));
   DY_010.write(MBSlave.GetBit(CW_DY_010));
   DY_011.write(MBSlave.GetBit(CW_DY_011));
+  DY_012.write(MBSlave.GetBit(CW_DY_012));
+  DY_013.write(MBSlave.GetBit(CW_DY_013));
+  DY_014.write(MBSlave.GetBit(CW_DY_014));
+  DY_015.write(MBSlave.GetBit(CW_DY_015));
+  DY_016.write(MBSlave.GetBit(CW_DY_016));
+  DY_017.write(MBSlave.GetBit(CW_DY_017));
+  DY_018.write(MBSlave.GetBit(CW_DY_018));
+  #if not defined(NC_BUILD)
+  DY_019.write(MBSlave.GetBit(CW_DY_019));
+  DY_020.write(MBSlave.GetBit(CW_DY_020));
+  DY_021.write(MBSlave.GetBit(CW_DY_021));
+#endif // if not defined(NC_BUILD)
+
 
   // Drive AOs from master values
   AY_000.writeAO(MBSlave.MbData[HW_AY_000]);
@@ -690,12 +807,6 @@ void processHostWrites()
 
   // DO TImer presets controllino: Active High reverse
 
-
-  DY_007.setInactiveDuration(MBSlave.MbData[HW_DY_007_OFSP]);
-  DY_007.setActiveDuration(MBSlave.MbData[HW_DY_007_ONSP]);
-
-  DY_008.setInactiveDuration(MBSlave.MbData[HW_DY_008_OFSP]);
-  DY_008.setActiveDuration(MBSlave.MbData[HW_DY_008_ONSP]);
 
   // capture pending IP
   blconvert.regsl[1] =   MBSlave.MbData[HW_CI_006_PV];
@@ -749,7 +860,6 @@ void EEPROMWriteCurrentIPs()
 
 void EEPromWriteOneWireMaps()
 {
-
   EEPROM.put(EEPROM_ONE_WIRE_MAP, temperatureMgr.oneWireTemperatureMap);
 }
 
@@ -824,7 +934,10 @@ void EEPROMWriteDefaultConfig()
 
 void remoteAtlasCommandHandler(uint8_t argc, char **argv, Stream *aOutputStream)
 {
+    #if defined(NC_BUILD)
   char command = argv[0][0];
+
+
 
   switch (command) {
   case 's':
@@ -859,6 +972,9 @@ void remoteAtlasCommandHandler(uint8_t argc, char **argv, Stream *aOutputStream)
   default:
     *aOutputStream << F("Invalid Command for Atlas")  << endl;
   }
+  #else // if defined(NC_BUILD)
+  *aOutputStream << F("Atlas not Implemented on this Remote I/O") << endl;
+  #endif // if defined(NC_BUILD)
 }
 
 void remoteDeviceCommandHandler(uint8_t argc, char  **argv, Stream *aOutputStream)
@@ -871,16 +987,19 @@ void remoteDeviceCommandHandler(uint8_t argc, char  **argv, Stream *aOutputStrea
     *aOutputStream << F("TODO set IP:")  << endl;
 
     break;
-    case 'r':
 
-      if (argc == 1)
-      {
-        *aOutputStream << F("reseting to defaults. Closing Client Connection.") << endl;
-        onRestoreDefaults(CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_11,0 );
-        rebootDevice();
-      }
-      else *aOutputStream << F("Unrecongized format for command")  << endl;
-      break;
+  case 'r':
+
+    if (argc == 1)
+    {
+      *aOutputStream << F("reseting to defaults. Closing Client Connection.") <<
+        endl;
+      onRestoreDefaults(CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_11, 0);
+      rebootDevice();
+    }
+    else *aOutputStream << F("Unrecongized format for command")  << endl;
+    break;
+
   case 'd':
 
     if (argc == 1)
@@ -946,11 +1065,11 @@ void remoteHelpCommandHandler(uint8_t argc,
   *aOutputStream << F(" 1wire m <x> <y>") << endl;
 }
 
-
-
-
-void remoteOneWireCommandHandler(uint8_t argc, char  **argv, Stream *aOutputStream)
+void remoteOneWireCommandHandler(uint8_t argc, char  **argv,
+                                 Stream *aOutputStream)
 {
+
+  #if  not defined(NC2_BUILD)
   char command = argv[0][0];
 
   switch (command) {
@@ -960,12 +1079,14 @@ void remoteOneWireCommandHandler(uint8_t argc, char  **argv, Stream *aOutputStre
     {
       uint8_t x = atoi(argv[1]);
       uint8_t y = atoi(argv[2]);
-      if( temperatureMgr.mapSensor(x, y ))
+
+      if (temperatureMgr.mapSensor(x, y))
       {
-          EEPromWriteOneWireMaps();
-          temperatureMgr.serialize(aOutputStream, true);
+        EEPromWriteOneWireMaps();
+        temperatureMgr.serialize(aOutputStream, true);
       }
-      else *aOutputStream << F("x and|or y out of range:") << " x:" << x << " y:" << y << endl;
+      else *aOutputStream << F("x and|or y out of range:") << " x:" << x <<
+          " y:" << y << endl;
     }
     else *aOutputStream << F("Unrecongized format for command")  << endl;
     break;
@@ -974,8 +1095,7 @@ void remoteOneWireCommandHandler(uint8_t argc, char  **argv, Stream *aOutputStre
 
     if (argc == 1)
     {
-
-        temperatureMgr.serialize(aOutputStream, true);
+      temperatureMgr.serialize(aOutputStream, true);
     }
     else *aOutputStream << F("Unrecognized format for command")  << endl;
     break;
@@ -993,4 +1113,7 @@ void remoteOneWireCommandHandler(uint8_t argc, char  **argv, Stream *aOutputStre
       aOutputStream->println(argv[i]);
      }
    */
+  #else
+       *aOutputStream << F("1-Wire not Implemented on this Remote I/O")  << endl;
+  #endif
 }

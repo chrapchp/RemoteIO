@@ -22,30 +22,24 @@
 #define APP_MAJOR 0
 #define APP_MINOR 0
 #define APP_PATCH 1
-#define DEVICE_TYPE 'N' // Nutrient Center N or Growing Chamber G
+
+
+#if defined(GC_BUILD)
+  #define DEVICE_TYPE '1' // NC=1, GC=2, 3 = NC 1 remote I/O 2
+#elif defined(NC_BUILD)
+  #define DEVICE_TYPE '2' // NC=1, GC=2, 3 = NC 1 remote I/O 2
+#else
+  #define DEVICE_TYPE '3' // NC=1, GC=2, 3 = NC 1 remote I/O 2
+
+#endif // if defined(GC_BUILD)
+
 #define APP_BUILD_DATE 1523558276L
 
+// detecting modbuss coil  change
 #define BIT_NO_CHANGE 0
 #define BIT_RISING_EDGE 1
 #define BIT_FALLING_EDGE 2
 
-#ifdef CONTROLLINO_BUILD
-  # define CONTROLLINO_MAXI_AUTOMATION
-  # include <Controllino.h>
-  // Atlas serial 8:1 control pins
-  # define S1 CONTROLLINO_PIN_HEADER_DIGITAL_OUT_12
-  # define S2 CONTROLLINO_PIN_HEADER_DIGITAL_OUT_13
-  # define S3 CONTROLLINO_PIN_HEADER_DIGITAL_OUT_14
-#else
-  // Atlas serial 8:1 control pins
-  # define S1 7
-  # define S2 8
-  # define S3 9
-#endif // ifdef CONTROLLINO_BUILD
-
-const uint8_t s1 = S1;
-const uint8_t s2 = S2;
-const uint8_t s3 = S3;
 
 // IP addressing used whent nothing stored in EEPROM
 #define DEFAULT_IP_ADDRESS   192, 168, 1, 253 // 192.168.1.253
@@ -57,7 +51,7 @@ const uint8_t s3 = S3;
 #define DEFAULT_PENDING_MAC_ADDRESS 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 #define DEFAULT_MODBUSBUS_PORT 502
 #define DEFAULT_ANALOG_POLL_RATE 2 // seconds
-
+#define DEFAULT_DI_DEBOUNCE_TIME 250 // ms
 
 // EEPROM addresses
 #define EEPROM_CONFIGURED 2        // this value stored at address
@@ -74,14 +68,22 @@ const uint8_t s3 = S3;
 // flow meter constants
 #define FLOW_CALC_PERIOD_SECONDS 1 // flow rate calc period s
 
-#define FT001_SENSOR_INTERUPT_PIN CONTROLLINO_SCREW_TERMINAL_INT_00
+#define XT006_SENSOR_INTERUPT_PIN CONTROLLINO_SCREW_TERMINAL_INT_00
 
-#define ENABLE_FT001_SENSOR_INTERRUPTS() attachInterrupt(digitalPinToInterrupt(        \
-                                                           FT001_SENSOR_INTERUPT_PIN), \
-                                                         onFT_001_PulseIn,             \
+#define ENABLE_XT006_SENSOR_INTERRUPTS() attachInterrupt(digitalPinToInterrupt(        \
+                                                           XT006_SENSOR_INTERUPT_PIN), \
+                                                         onXT_006_PulseIn,             \
                                                          RISING)
-#define DISABLE_FT001_SENSOR_INTERRUPTS() detachInterrupt(digitalPinToInterrupt( \
-                                                            FT001_SENSOR_INTERUPT_PIN))
+#define DISABLE_XT006_SENSOR_INTERRUPTS() detachInterrupt(digitalPinToInterrupt( \
+                                                            XT006_SENSOR_INTERUPT_PIN))
+
+#define XT007_SENSOR_INTERUPT_PIN CONTROLLINO_SCREW_TERMINAL_INT_01
+#define ENABLE_XT007_SENSOR_INTERRUPTS() attachInterrupt(digitalPinToInterrupt(        \
+                                    XT007_SENSOR_INTERUPT_PIN), \
+                                    onXT_007_PulseIn,             \
+                                              RISING)
+#define DISABLE_XT007_SENSOR_INTERRUPTS() detachInterrupt(digitalPinToInterrupt( XT006_SENSOR_INTERUPT_PIN))
+
 
 // one wire constants
 #define WIRE_BUS_PIN 20 // pin
@@ -92,150 +94,153 @@ const uint8_t s3 = S3;
 #define DEFAULT_TMR_OFF_DURATION 10 // sec
 
 
-#define CS_DI_000   80              // Discrete Input 0  (0-24V)
-#define CS_DI_001   81              // Discrete Input 1  (0-24V)
-#define CS_DI_002   82              // Discrete Input 2  (0-24V)
-#define CS_DI_003   83              // Discrete Input 3  (0-24V)
-#define CS_FT_001   84              // Flow Indicator (0-24V) Interrupt Not
-                                    // useful on its own
-#define CS_CI_001   85              // Restore to Defaults (hard)
-#define CW_AI_000_EN   0            // Analog Input 0 Enabled
-#define CW_AI_001_EN   1            // Analog Input 1 Enabled
-#define CW_AI_002_EN   2            // Analog Input 2 Enabled
-#define CW_AI_003_EN   3            // Analog Input 3 Enabled
-#define CW_AI_004_EN   4            // Analog Input 4 Enabled
-#define CW_AI_005_EN   5            // Analog Input 5 Enabled
-#define CW_AI_006_EN   6            // Analog Input 6 Enabled
-#define CW_AI_007_EN   7            // Analog Input 7 Enabled
-#define CW_AY_000_EN   8            // Analog Output 0 Enabled
-#define CW_AY_001_EN   9            // Analog Output 1 Enabled
-#define CW_CY_001   10              // Restore to Defaults (soft)
-#define CW_DY_000   11              // Relay Output 0
-#define CW_DY_000_EN   12           // Relay Output 0 Enabled
-#define CW_DY_001   13              // Relay Output 1
-#define CW_DY_001_EN   14           // Relay Output 1 Enabled
-#define CW_DY_002   15              // Relay Output 1
-#define CW_DY_002_EN   16           // Relay Output 1 Enabled
-#define CW_DY_003   17              // Relay Output 3
-#define CW_DY_003_EN   18           // Relay Output 3 Enabled
-#define CW_DY_004   19              // Relay Output 4
-#define CW_DY_004_EN   20           // Relay Output 4 Enabled
-#define CW_DY_005   21              // Relay Output 5
-#define CW_DY_005_EN   22           // Relay Output 5 Enabled
-#define CW_DY_006   23              // Relay Output 6
-#define CW_DY_006_EN   24           // Relay Output 6 Enabled
-#define CW_DY_007   25              // Relay Timer Output 1
-#define CW_DY_007_EN   26           // Relay Timer Output 1 Enabled
-#define CW_DY_007_OFF   27          // Relay Timer Output 1 Force Off
-#define CW_DY_007_ON   28           // Relay Timer Output 1 Force On
-#define CW_DY_008   29              // Relay Timer Output 2
-#define CW_DY_008_EN   30           // Relay Timer Output 2 Enabled
-#define CW_DY_008_OFF   31          // Relay Timer Output 2 Force Off
-#define CW_DY_008_ON   32           // Relay Timer Output 2 Force On
-#define CW_DY_009   33              // Discrete Output  0 Solid State (2A)
-#define CW_DY_009_EN   34           // Discrete Output  0 Solid State Enabled
-#define CW_DY_010   35              // Discrete Output  1 Solid State (2A)
-#define CW_DY_010_EN   36           // Discrete Output  1 Solid State Enabled
-#define CW_DY_011   37              // Discrete Output  2 Solid State (2A)
-#define CW_DY_011_EN   38           // Discrete Output  2 Solidate State Enabled
-#define CW_FI_001_EN   39           // Flow Indicator Enabled
-#define CW_DI_000_EN   40           // Discrete Input 0 Enabled
-#define CW_DI_001_EN   41           // Discrete Input 1 Enabled
-#define CW_DI_002_EN   42           // Discrete Input 2 Enabled
-#define CW_DI_003_EN   43           // Discrete Input 3 Enabled
-#define CW_CY_002   44              // Re-Scan 1-Wire Temperatures
-#define CW_CY_003   45              // Use DHCP IP Addressing
-#define CW_CY_004   46              // Reboot Remote I/O
-#define CW_CY_005   47              // Persist settings to EEPROM
-#define CW_TI_001_EN   48           // 1-Wire Temperature 1 Enabled
-#define CW_TI_002_EN   49           // 1-Wire Temperature 2 Enabled
-#define CW_TI_003_EN   50           // 1-Wire Temperature 3 Enabled
-#define CW_TI_004_EN   51           // 1-Wire Temperature 4 Enabled
-#define CW_TI_005_EN   52           // 1-Wire Temperature 5 Enabled
-#define CW_TI_006_EN   53           // 1-Wire Temperature 6 Enabled
-#define CW_TI_007_EN   54           // 1-Wire Temperature 7 Enabled
-#define CW_AI_008_EN   55           // Chamber Humidity Enable
-#define CW_AI_009_EN   56           // Chamber CO2 Enable
-#define CW_AI_010_EN   57           // pH Enable
-#define CW_AI_011_EN   58           // EC Enable
-#define CW_CY_006   59              // Change IP using pending values
-#define CW_SI_001   60              // Remote I/O Status LED
+#define CS_CI_001   85        // Restore to Defaults (hard)
+#define CS_DI_000   97        // Discrete Input 0  (0-24V)
+#define CS_DI_001   98        // Discrete Input 1  (0-24V)
+#define CS_DI_002   99        // Discrete Input 2  (0-24V)
+#define CS_DI_003   100        // Discrete Input 3  (0-24V)
+#define CS_DI_004   101        // Discrete Input 4
+#define CS_DI_005   102        // Discrete Input 5
+#define CS_DI_006   103        // Discrete Input 6
+#define CS_DI_007   104        // Discrete Input 7
+#define CS_DI_008   105        // Discrete Input 8
+#define CS_DI_009   106        // Discrete Input 9
+#define CS_XT_006   107        // Flow Indicator (0-24V) Interrupt Not useful on its own
+#define CS_XT_007   108        // Flow Indicator (0-24V) Interrupt Not useful on its own
 
 
-#define HR_TI_001   40              // 1-Wire Temperature 1
-#define HR_TI_002   41              // 1-Wire Temperature 2
-#define HR_TI_003   42              // 1-Wire Temperature 3
-#define HR_TI_004   43              // 1-Wire Temperature 4
-#define HR_TI_005   44              // 1-Wire Temperature 5
-#define HR_TI_006   45              // 1-Wire Temperature 6
-#define HR_TI_007   46              // 1-Wire Temperature 7
-#define HR_AI_000   47              // Analog Input 0 Value Raw/Scaled  (0-24V)
-#define HR_AI_001   48              // Analog Input 1 Value Raw/Scaled  (0-24V)
-#define HR_AI_002   49              // Analog Input 2 Value Raw/Scaled  (0-24V)
-#define HR_AI_003   50              // Analog Input 3 Value Raw/Scaled  (0-24V)
-#define HR_AI_004   51              // Analog Input 4 Value Raw/Scaled  (0-24V)
-#define HR_AI_005   52              // Analog Input 5 Value Raw/Scaled  (0-24V)
-#define HR_AI_006   53              // Analog Input 6 Value Raw/Scaled  (0-10V)
-#define HR_AI_007   54              // Analog Input 7 Value Raw/Scaled  (0-10V)
-#define HR_AI_008   55              // Chamber Humidity
-#define HR_AI_009   56              // Chamber CO2
-#define HR_AI_010   57              // pH
-#define HR_AI_011   58              // EC
-#define HR_DY_007_OFCV   59         // Relay Timer 1 Off  Duration  Current
-                                    // Value(s)
-#define HR_DY_007_ONCV   60         // Relay Timer 1  On Duration  Current
-                                    // Value(s)
-#define HR_DY_008_OFCV   61         // Relay Timer 2 Off  Duration  Current
-                                    // Value(s)
-#define HR_DY_008_ONCV   62         // Relay Timer 2  On Duration  Current
-                                    // Value(s)
-#define HR_FI_001_RW   63           // Flow Indicator RAW Pulse Per Second
-#define HR_KI_001   64              // Hearbeat Counter ( every 5 seconds)
-#define HR_KI_002   65              // Remote I/O Status register
-#define HR_KI_003   66              // Firmware Version in BCD format
-#define HR_CI_006_CV   196          // Current IP Address (decimal format)
-#define HR_CI_007_CV   198          // Current IP Gateway (decimal format)
-#define HR_CI_008_CV   200          // Current IP Subnet Mask (decimal format)
-#define HR_CI_009_CV_H   202        // Current MAC Address High (decimal format)
-#define HR_CI_009_CV_L   204        // Current MAC Address Low (decimal format)
-#define HR_TI_001_ID_H   206        //  1-Wire Temperature 1 (UID) High
-#define HR_TI_001_ID_L   208        //  1-Wire Temperature 1 (UID) Low
-#define HR_TI_002_ID_H   210        //  1-Wire Temperature 2 (UID) High
-#define HR_TI_002_ID_L   212        //  1-Wire Temperature 2 (UID) Low
-#define HR_TI_003_ID_H   214        //  1-Wire Temperature 3 (UID) High
-#define HR_TI_003_ID_L   216        //  1-Wire Temperature 3(UID) Low
-#define HR_TI_004_ID_H   218        //  1-Wire Temperature 4 (UID) High
-#define HR_TI_004_ID_L   220        //  1-Wire Temperature 4 (UID) Low
-#define HR_TI_005_ID_H   222        //  1-Wire Temperature 5 (UID) High
-#define HR_TI_005_ID_L   224        //  1-Wire Temperature 5 (UID) Low
-#define HR_TI_006_ID_H   226        //  1-Wire Temperature 6 (UID) High
-#define HR_TI_006_ID_L   228        //  1-Wire Temperature 6 (UID) Low
-#define HR_TI_007_ID_H   230        //  1-Wire Temperature 7 (UID) High
-#define HR_TI_007_ID_L   232        //  1-Wire Temperature 7 (UID) Low
-#define HR_KI_004   234             // App Build date Unix EPOCH
-#define HW_DI_000_DT   10           // Discrete Input 0 Debounce Time (ms)
-#define HW_DI_001_DT   11           // Discrete Input 1 Debounce Time (ms)
-#define HW_DI_002_DT   12           // Discrete Input 2 Debounce Time (ms)
-#define HW_AI_000_PR   13           // Analog Input 0 Poll Rate (ms)
-#define HW_AI_001_PR   14           // Analog Input 1 Poll Rate (ms)
-#define HW_AI_002_PR   15           // Analog Input 2 Poll Rate (ms)
-#define HW_AI_003_PR   16           // Analog Input 3 Poll Rate (ms)
-#define HW_AI_004_PR   17           // Analog Input 4 Poll Rate (ms)
-#define HW_AI_005_PR   18           // Analog Input 5 Poll Rate (ms)
-#define HW_AI_006_PR   19           // Analog Input 6 Poll Rate (ms)
-#define HW_AI_007_PR   20           // Analog Input 7 Poll Rate (ms)
-#define HW_AY_000   21              // Analog Output 0 Value (0-10V)
-#define HW_AY_001   22              // Analog Output 1 Value (0-10V)
-#define HW_DY_007_OFSP   23         // Relay Timer 1  Off Duration Setpoint (s)
-#define HW_DY_007_ONSP   24         // Relay Timer 1  On Duration Setpoint (s)
-#define HW_DY_008_OFSP   25         // Relay Timer 2  Off Duration Setpoint (s)
-#define HW_DY_008_ONSP   26         // Relay Timer 2  On Duration Setpoint (s)
-#define HW_DI_003_DT   27           // Discrete Input 3 Debounce Time (ms)
-#define HW_CI_006_PV   90           // Change  IP Address (decimal format)
-#define HW_CI_007_PV   92           // Change IP Gateway (decimal format)
-#define HW_CI_008_PV   94           // Change IP Subnet Mask (decimal format)
-#define HW_CI_009_PV_H   96         // Change MAC Address High (decimal format)
-#define HW_CI_009_PV_L   98         // Change MAC Address Low (decimal format)
+#define CW_DY_000   0        // Relay Output 0
+#define CW_DY_001   1        // Relay Output 1
+#define CW_DY_002   2        // Relay Output 1
+#define CW_DY_003   3        // Relay Output 3
+#define CW_DY_004   4        // Relay Output 4
+#define CW_DY_005   5        // Relay Output 5
+#define CW_DY_006   6        // Relay Output 6
+#define CW_DY_007   7        // Relay Output 7
+#define CW_DY_008   8        // Relay Output 8
+#define CW_DY_009   9        // Relay Output 9
+#define CW_DY_010   10        // Discrete Output  0 Solid State (2A)
+#define CW_DY_011   11        // Discrete Output  1 Solid State (2A)
+#define CW_DY_012   12        // Discrete Output  2 Solid State (2A)
+#define CW_DY_013   13        // Discrete Output  3 Solid State (2A)
+#define CW_DY_014   14        // Discrete Output  4 Solid State (2A)
+#define CW_DY_015   15        // Discrete Output  5 Solid State (2A)
+#define CW_DY_016   16        // Discrete Output  6 Solid State (2A)
+#define CW_DY_017   17        // Discrete Output  7 Solid State (2A)
+#define CW_DY_018   18        // Discrete Output Header 1 (20mA)
+#define CW_DY_019   19        // Discrete Output Header 2 (20mA)
+#define CW_DY_020   20        // Discrete Output Header 3 (20mA)
+#define CW_DY_021   21        // Discrete Output  Header 0 (20mA)
+#define CW_AI_000_EN   22        // Analog Input 0 Enabled
+#define CW_AI_001_EN   23        // Analog Input 1 Enabled
+#define CW_AI_002_EN   24        // Analog Input 2 Enabled
+#define CW_AI_003_EN   25        // Analog Input 3 Enabled
+#define CW_AI_004_EN   26        // Analog Input 4 Enabled
+#define CW_AI_005_EN   27        // Analog Input 5 Enabled
+#define CW_AI_006_EN   28        // Analog Input 6 Enabled
+#define CW_AY_000_EN   29        // Analog Output 0 Enabled
+#define CW_AY_001_EN   30        // Analog Output 1 Enabled
+#define CW_CY_001   31        // Restore to Defaults (soft)
+#define CW_CY_002   32        // Re-Scan 1-Wire Temperatures
+#define CW_CY_003   33        // Use DHCP IP Addressing
+#define CW_CY_004   34        // Reboot Remote I/O
+#define CW_CY_005   35        // Persist settings to EEPROM
+#define CW_CY_006   36        // Change IP using pending values
+#define CW_DI_000_EN   37        // Discrete Input 0 Enabled
+#define CW_DI_001_EN   38        // Discrete Input 1 Enabled
+#define CW_DI_002_EN   39        // Discrete Input 2 Enabled
+#define CW_DI_003_EN   40        // Discrete Input 3 Enabled
+#define CW_DI_004_EN   41        // Discrete Input 4 Enabled
+#define CW_DI_005_EN   42        // Discrete Input 5 Enabled
+#define CW_DI_006_EN   43        // Discrete Input 6 Enabled
+#define CW_DI_007_EN   44        // Discrete Input 7 Enabled
+#define CW_DI_008_EN   45        // Analog Input 8 Enabled
+#define CW_DI_009_EN   46        // Analog Input 9 Enabled
+#define CW_DY_000_EN   47        // Relay Output 0 Enabled
+#define CW_DY_001_EN   48        // Relay Output 1 Enabled
+#define CW_DY_002_EN   49        // Relay Output 1 Enabled
+#define CW_DY_003_EN   50        // Relay Output 3 Enabled
+#define CW_DY_004_EN   51        // Relay Output 4 Enabled
+#define CW_DY_005_EN   52        // Relay Output 5 Enabled
+#define CW_DY_006_EN   53        // Relay Output 6 Enabled
+#define CW_DY_007_EN   54        // Relay Output 7 Enabled
+#define CW_DY_008_EN   55        // Relay Output 8 Enabled
+#define CW_DY_009_EN   56        // Relay Output 9 Enabled
+#define CW_DY_010_EN   57        // Discrete Output  0 Solid State Enabled
+#define CW_DY_011_EN   58        // Discrete Output  1 Solid State Enabled
+#define CW_DY_012_EN   59        // Discrete Output  2 Solidate State Enabled
+#define CW_DY_013_EN   60        // Discrete Output  3 Solid State Enabled
+#define CW_DY_014_EN   61        // Discrete Output  4 Solid State Enabled
+#define CW_DY_015_EN   62        // Discrete Output  5 Solid State Enabled
+#define CW_DY_016_EN   63        // Discrete Output  6 Solid State Enabled
+#define CW_DY_017_EN   64        // Discrete Output  7 Solid State Enabled
+#define CW_DY_018_EN   65        // Discrete Output Header 1 Enabled
+#define CW_DY_019_EN   66        // Discrete Output Header 2 Enabled
+#define CW_DY_020_EN   67        // Discrete Output Header 3 Enabled
+#define CW_DY_021_EN   68        // Discrete Output Header 0 Enabled
+#define CW_FI_001_EN   69        // Flow 1 Indicator Enabled
+#define CW_FI_002_EN   70        // Flow 2 Indicator Enabled
+#define CW_TI_001_EN   71        // 1-Wire Temperature 1 Enabled
+#define CW_TI_002_EN   72        // 1-Wire Temperature 2 Enabled
+#define CW_TI_003_EN   73        // 1-Wire Temperature 3 Enabled
+#define CW_TI_004_EN   74        // 1-Wire Temperature 4 Enabled
+#define CW_TI_005_EN   75        // 1-Wire Temperature 5 Enabled
+#define CW_TI_006_EN   76        // 1-Wire Temperature 6 Enabled
+#define CW_TI_007_EN   77        // 1-Wire Temperature 7 Enabled
+
+#define HR_TI_001   20        // 1-Wire Temperature 1
+#define HR_TI_002   21        // 1-Wire Temperature 2
+#define HR_TI_003   22        // 1-Wire Temperature 3
+#define HR_TI_004   23        // 1-Wire Temperature 4
+#define HR_TI_005   24        // 1-Wire Temperature 5
+#define HR_TI_006   25        // 1-Wire Temperature 6
+#define HR_TI_007   26        // 1-Wire Temperature 7
+#define HR_AI_000   27        // Analog Input 0 Value Raw/Scaled  (0-24V)
+#define HR_AI_001   28        // Analog Input 1 Value Raw/Scaled  (0-24V)
+#define HR_AI_002   29        // Analog Input 2 Value Raw/Scaled  (0-24V)
+#define HR_AI_003   30        // Analog Input 3 Value Raw/Scaled  (0-24V)
+#define HR_AI_004   31        // Analog Input 4 Value Raw/Scaled  (0-24V)
+#define HR_AI_005   32        // Analog Input 5 Value Raw/Scaled  (0-24V)
+#define HR_AI_006   33        // Analog Input 6 Value Raw/Scaled  (0-24V)
+#define HR_FI_001_RW   34        // Flow Indicator RAW Pulse Per Second
+#define HR_FI_002_RW   35        // Flow Indicator RAW Pulse Per Second
+#define HR_KI_001   36        // Hearbeat Counter ( every 5 seconds)
+#define HR_KI_002   37        // Remote I/O Status register
+#define HR_KI_003   38        // Firmware Version in BCD format
+#define HR_XT_001   39        // Serial Place holder 1
+#define HR_XT_002   40        // Serial Place holder 2
+#define HR_XT_003   41        // Serial Place holder 3
+#define HR_XT_004   42        // Serial Place holder 4
+#define HR_XT_005   43        // Serial Place holder 5
+#define HR_KI_005   44        // Device Type 1=NC, 2=GC, 3=NC Remote IO 2
+#define HR_CI_006_CV   82        // Current IP Address (decimal format)
+#define HR_CI_007_CV   84        // Current IP Gateway (decimal format)
+#define HR_CI_008_CV   86        // Current IP Subnet Mask (decimal format)
+#define HR_CI_009_CV_H   88        // Current MAC Address High (decimal format)
+#define HR_CI_009_CV_L   90        // Current MAC Address Low (decimal format)
+#define HR_KI_004   92        // App Build date Unix EPOCH
+#define HR_TI_001_ID_H   94        //  1-Wire Temperature 1 (UID) High
+#define HR_TI_001_ID_L   96        //  1-Wire Temperature 1 (UID) Low
+#define HR_TI_002_ID_H   98        //  1-Wire Temperature 2 (UID) High
+#define HR_TI_002_ID_L   100        //  1-Wire Temperature 2 (UID) Low
+#define HR_TI_003_ID_H   102        //  1-Wire Temperature 3 (UID) High
+#define HR_TI_003_ID_L   104        //  1-Wire Temperature 3(UID) Low
+#define HR_TI_004_ID_H   106        //  1-Wire Temperature 4 (UID) High
+#define HR_TI_004_ID_L   108        //  1-Wire Temperature 4 (UID) Low
+#define HR_TI_005_ID_H   110        //  1-Wire Temperature 5 (UID) High
+#define HR_TI_005_ID_L   112        //  1-Wire Temperature 5 (UID) Low
+#define HR_TI_006_ID_H   114        //  1-Wire Temperature 6 (UID) High
+#define HR_TI_006_ID_L   116        //  1-Wire Temperature 6 (UID) Low
+#define HR_TI_007_ID_H   118        //  1-Wire Temperature 7 (UID) High
+#define HR_TI_007_ID_L   120        //  1-Wire Temperature 7 (UID) Low
+
+#define HW_AY_000   10        // Analog Output 0 Value (0-10V)
+#define HW_AY_001   11        // Analog Output 1 Value (0-10V)
+#define HW_CI_006_PV   50        // Change  IP Address (decimal format)
+#define HW_CI_007_PV   52        // Change IP Gateway (decimal format)
+#define HW_CI_008_PV   54        // Change IP Subnet Mask (decimal format)
+#define HW_CI_009_PV_H   56        // Change MAC Address High (decimal format)
+#define HW_CI_009_PV_L   58        // Change MAC Address Low (decimal format)
 
 
 // for sending and recieve long via modbus
