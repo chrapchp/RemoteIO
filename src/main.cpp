@@ -189,7 +189,7 @@ DA_DiscreteInput DI_009 = DA_DiscreteInput(CONTROLLINO_A13,
 // reset IP to defaults
 DA_DiscreteInput CI_001 = DA_DiscreteInput(
   CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_07,
-  DA_DiscreteInput::None,
+  DA_DiscreteInput::FallingEdgeDetect,
   false);
 
 
@@ -204,7 +204,7 @@ DA_DiscreteOutput DY_005 = DA_DiscreteOutput(CONTROLLINO_RELAY_05,  HIGH);
 DA_DiscreteOutput DY_006 = DA_DiscreteOutput(CONTROLLINO_RELAY_06,  HIGH);
 DA_DiscreteOutput DY_007 = DA_DiscreteOutput(CONTROLLINO_RELAY_07,  HIGH);
 DA_DiscreteOutput DY_008 = DA_DiscreteOutput(CONTROLLINO_RELAY_08,  HIGH);
-DA_DiscreteOutput DY_009 = DA_DiscreteOutput(CONTROLLINO_RELAY_07,  HIGH);
+DA_DiscreteOutput DY_009 = DA_DiscreteOutput(CONTROLLINO_RELAY_09,  HIGH);
 DA_DiscreteOutput DY_010 = DA_DiscreteOutput(CONTROLLINO_DO0,  HIGH);
 DA_DiscreteOutput DY_011 = DA_DiscreteOutput(CONTROLLINO_DO1,  HIGH);
 DA_DiscreteOutput DY_012 = DA_DiscreteOutput(CONTROLLINO_DO2,  HIGH);
@@ -308,7 +308,8 @@ void onTemperatureRead()
 void setup()
 {
   MCUSR = 0; // clear existing watchdog timer presets
-  temperatureMgr.setPollingInterval(5000);
+
+  temperatureMgr.setPollingInterval(DEFAULT_1WIRE_POLLING_INTERVAL);
   temperatureMgr.setBlockingRead(false);
   temperatureMgr.scanSensors();
     #ifdef IO_DEBUG
@@ -453,6 +454,7 @@ void refreshAnalogs()
 
 void refreshDiscreteInputs()
 {
+  DI_000.refresh();
   DI_001.refresh();
   DI_002.refresh();
   DI_003.refresh();
@@ -692,8 +694,8 @@ void refreshHostReads()
   MBSlave.SetBit(CS_DI_009, DI_009.getSample());
 
 
-  MBSlave.MbData[HR_FI_001_RW] = XT_006.getCurrentPulses();
-  MBSlave.MbData[HR_FI_002_RW] = XT_007.getCurrentPulses();
+  MBSlave.MbData[HR_XT_006_RW] = XT_006.getCurrentPulses();
+  MBSlave.MbData[HR_XT_007_RW] = XT_007.getCurrentPulses();
 
   // watchdog current value
   MBSlave.MbData[HR_KI_001] = KI_001_CV;
@@ -928,6 +930,8 @@ void EEPROMWriteDefaultConfig()
   EEPROM.put(EEPROM_GATEWAY_ADDR, temp32);
   temp32 = defaultSubnet;
   EEPROM.put( EEPROM_SUBNET_ADDR, temp32);
+
+    EEPROM.put(    EEPROM_MAC_ADDR, defaultMAC);
   temperatureMgr.resetMaps();
   EEPromWriteOneWireMaps();
 }
@@ -994,7 +998,7 @@ void remoteDeviceCommandHandler(uint8_t argc, char  **argv, Stream *aOutputStrea
     {
       *aOutputStream << F("reseting to defaults. Closing Client Connection.") <<
         endl;
-      onRestoreDefaults(CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_11, 0);
+      onRestoreDefaults(CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_07, 0);
       rebootDevice();
     }
     else *aOutputStream << F("Unrecongized format for command")  << endl;
