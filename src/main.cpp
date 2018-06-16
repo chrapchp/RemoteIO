@@ -213,20 +213,22 @@ DA_DiscreteOutput DY_014 = DA_DiscreteOutput(CONTROLLINO_DO4,  HIGH);
 DA_DiscreteOutput DY_015 = DA_DiscreteOutput(CONTROLLINO_DO5,  HIGH);
 DA_DiscreteOutput DY_016 = DA_DiscreteOutput(CONTROLLINO_DO6,  HIGH);
 DA_DiscreteOutput DY_017 = DA_DiscreteOutput(CONTROLLINO_DO7,  HIGH);
+DA_DiscreteOutput DY_021 = DA_DiscreteOutput(
+  CONTROLLINO_PIN_HEADER_DIGITAL_OUT_15,
+  HIGH);
+
+#if not defined(NC_BUILD)
 DA_DiscreteOutput DY_018 = DA_DiscreteOutput(
   CONTROLLINO_PIN_HEADER_DIGITAL_OUT_14,
   HIGH);
 
-#if not defined(NC_BUILD)
 DA_DiscreteOutput DY_019 = DA_DiscreteOutput(
   CONTROLLINO_PIN_HEADER_DIGITAL_OUT_13,
   HIGH);
 DA_DiscreteOutput DY_020 = DA_DiscreteOutput(
   CONTROLLINO_PIN_HEADER_DIGITAL_OUT_12,
   HIGH);
-DA_DiscreteOutput DY_021 = DA_DiscreteOutput(
-  CONTROLLINO_PIN_HEADER_DIGITAL_OUT_15,
-  HIGH);
+
 #endif // if not defined(NC_BUILD)
 
 // 0-24V
@@ -314,7 +316,6 @@ void setup()
   temperatureMgr.scanSensors();
     #ifdef IO_DEBUG
   Serial.begin(9600);
-
   //  aOutputStream->begin(9600);
 
   temperatureMgr.serialize(aOutputStream, true);
@@ -322,14 +323,15 @@ void setup()
       #endif // ifdef PROCESS_TERMINAL
 
   temperatureMgr.init();
+    temperatureMgr.disableMgr();
 #if  defined(NC2_BUILD)
   temperatureMgr.disableMgr();
 #endif // if not defined(NC2_BUILD)
   Serial2.begin(9600);
   #if defined(NC_BUILD)
   atlasSensorMgr.init();
-  atlasSensorMgr.setPollingInterval(10000); // ms
-  atlasSensorMgr.setEnabled(false);
+  atlasSensorMgr.setPollingInterval(DEFAULT_ATLAS_POLLING_INTERVAL); // ms
+  atlasSensorMgr.setEnabled(true);
 #endif // if defined(NC_BUILD)
 
   EEPROMLoadConfig();
@@ -390,11 +392,13 @@ void setup()
   DY_015.setEnabled(true);
   DY_016.setEnabled(true);
   DY_017.setEnabled(true);
-  DY_018.setEnabled(true);
+  DY_021.setEnabled(true);
+
   #if not defined(NC_BUILD)
+  DY_018.setEnabled(true);
   DY_019.setEnabled(true);
   DY_020.setEnabled(true);
-  DY_021.setEnabled(true);
+
 #endif // if not defined(NC_BUILD)
 
 
@@ -425,6 +429,7 @@ void setup()
 
 void loop()
 {
+
   MBSlave.MbsRun();
 
   refreshHostReads();
@@ -435,6 +440,7 @@ void loop()
   refreshDiscreteInputs();
   KI_001.refresh();
   KI_004.refresh();
+
     #if defined(NC_BUILD)
   atlasSensorMgr.refresh();
   #endif // if defined(NC_BUILD)
@@ -652,6 +658,7 @@ void doCheckRebootDevice()
 
   if (bitState == BIT_RISING_EDGE)
   {
+
     rebootDevice();
   }
   CY_004 = MBSlave.GetBit(CW_CY_004);
@@ -659,13 +666,13 @@ void doCheckRebootDevice()
 
 void refreshHostReads()
 {
-  MBSlave.MbData[HR_TI_001] =     (int)(temperatureMgr.getTemperature(0) * 10.0);
-  MBSlave.MbData[HR_TI_002] =     (int)(temperatureMgr.getTemperature(1) * 10.0);
-  MBSlave.MbData[HR_TI_003] =     (int)(temperatureMgr.getTemperature(2) * 10.0);
-  MBSlave.MbData[HR_TI_004] =     (int)(temperatureMgr.getTemperature(3) * 10.0);
-  MBSlave.MbData[HR_TI_005] =     (int)(temperatureMgr.getTemperature(4) * 10.0);
-  MBSlave.MbData[HR_TI_006] =     (int)(temperatureMgr.getTemperature(5) * 10.0);
-  MBSlave.MbData[HR_TI_007] =     (int)(temperatureMgr.getTemperature(6) * 10.0);
+  MBSlave.MbData[HR_TI_001] =     (int)(temperatureMgr.getTemperature(0) * 10.0 );
+  MBSlave.MbData[HR_TI_002] =     (int)(temperatureMgr.getTemperature(1) * 10.0 );
+  MBSlave.MbData[HR_TI_003] =     (int)(temperatureMgr.getTemperature(2) * 10.0 );
+  MBSlave.MbData[HR_TI_004] =     (int)(temperatureMgr.getTemperature(3) * 10.0 );
+  MBSlave.MbData[HR_TI_005] =     (int)(temperatureMgr.getTemperature(4) * 10.0 );
+  MBSlave.MbData[HR_TI_006] =     (int)(temperatureMgr.getTemperature(5) * 10.0 );
+  MBSlave.MbData[HR_TI_007] =     (int)(temperatureMgr.getTemperature(6) * 10.0 );
   MBSlave.MbData[HR_AI_000] =     AI_000.getRawSample();
   MBSlave.MbData[HR_AI_001] =     AI_001.getRawSample();
   MBSlave.MbData[HR_AI_002] =     AI_002.getRawSample();
@@ -675,11 +682,13 @@ void refreshHostReads()
   MBSlave.MbData[HR_AI_006] =     AI_006.getRawSample();
 
 #if defined(NC_BUILD)
-  MBSlave.MbData[HR_XT_001] = atlasSensorMgr.getCachedValue(DA_ATLAS_PH);
-  MBSlave.MbData[HR_XT_002] = atlasSensorMgr.getCachedValue(DA_ATLAS_EC);
-  MBSlave.MbData[HR_XT_003] = atlasSensorMgr.getCachedValue(DA_ATLAS_ORB);
-  MBSlave.MbData[HR_XT_004] = atlasSensorMgr.getCachedValue(DA_ATLAS_DO);
-  MBSlave.MbData[HR_XT_005] = atlasSensorMgr.getCachedValue(DA_ATLAS_RTD);
+
+  MBSlave.MbData[HR_XT_001] = (int) (atlasSensorMgr.getCachedValue(DA_ATLAS_PH) * 10.0 );
+  MBSlave.MbData[HR_XT_002] = (int) (atlasSensorMgr.getCachedValue(DA_ATLAS_EC) * 10.0 );
+  MBSlave.MbData[HR_XT_003] = (int) (atlasSensorMgr.getCachedValue(DA_ATLAS_ORB) * 10.0 );
+  MBSlave.MbData[HR_XT_004] = (int) (atlasSensorMgr.getCachedValue(DA_ATLAS_DO) * 10.0 );
+  MBSlave.MbData[HR_XT_005] = (int) (atlasSensorMgr.getCachedValue(DA_ATLAS_RTD) * 10.0 );
+
 #endif // if defined(NC_BUILD)
 
   MBSlave.SetBit(CS_DI_000, DI_000.getSample());
@@ -775,6 +784,7 @@ void processHostWrites()
   // drive DOs from master values
   // Relays
 
+
   DY_000.write(MBSlave.GetBit(CW_DY_000));
   DY_001.write(MBSlave.GetBit(CW_DY_001));
   DY_002.write(MBSlave.GetBit(CW_DY_002));
@@ -793,11 +803,12 @@ void processHostWrites()
   DY_015.write(MBSlave.GetBit(CW_DY_015));
   DY_016.write(MBSlave.GetBit(CW_DY_016));
   DY_017.write(MBSlave.GetBit(CW_DY_017));
-  DY_018.write(MBSlave.GetBit(CW_DY_018));
+  DY_021.write(MBSlave.GetBit(CW_DY_021));
   #if not defined(NC_BUILD)
+  DY_018.write(MBSlave.GetBit(CW_DY_018));
   DY_019.write(MBSlave.GetBit(CW_DY_019));
   DY_020.write(MBSlave.GetBit(CW_DY_020));
-  DY_021.write(MBSlave.GetBit(CW_DY_021));
+
 #endif // if not defined(NC_BUILD)
 
 
@@ -931,7 +942,7 @@ void EEPROMWriteDefaultConfig()
   temp32 = defaultSubnet;
   EEPROM.put( EEPROM_SUBNET_ADDR, temp32);
 
-    EEPROM.put(    EEPROM_MAC_ADDR, defaultMAC);
+  EEPROM.put(    EEPROM_MAC_ADDR, defaultMAC);
   temperatureMgr.resetMaps();
   EEPromWriteOneWireMaps();
 }
@@ -953,7 +964,7 @@ void remoteAtlasCommandHandler(uint8_t argc, char **argv, Stream *aOutputStream)
       if ((channel >= 0) && (channel < (DA_ATLAS_MAX_CHANNELS)))
       {
         char atlasrxBuff[DA_ATLAS_RX_BUF_SZ];
-        atlasSensorMgr.sendRaw(channel, argv[2], atlasrxBuff, 800);
+        atlasSensorMgr.sendRaw(channel, argv[2], atlasrxBuff, 1000);
         *aOutputStream << F("Reply:")  << atlasrxBuff << endl;
       }
       else *aOutputStream << F("Invalid Channel:") << channel << endl;
@@ -972,7 +983,22 @@ void remoteAtlasCommandHandler(uint8_t argc, char **argv, Stream *aOutputStream)
     }
     else *aOutputStream << F("Unrecongized format for command")  << endl;
     break;
+    case 'm':
 
+      if (argc == 2)
+      {
+        uint8_t mode = atoi(argv[1]);
+
+        if ((mode == 1) or (mode == 0))
+        {
+          atlasSensorMgr.setEnabled( mode );
+
+          *aOutputStream << F("Mode set to:")  << mode << endl;
+        }
+        else *aOutputStream << F("Invalid Mode:") << mode << endl;
+      }
+      else *aOutputStream << F("Unrecongized format for command")  << endl;
+      break;
   default:
     *aOutputStream << F("Invalid Command for Atlas")  << endl;
   }
@@ -1045,6 +1071,8 @@ void remoteHelpCommandHandler(uint8_t argc,
   *aOutputStream << F(" atlas s <channel> <raw sensor command>") << endl;
   *aOutputStream << F("  Display Current Sensor Cached Values:");
   *aOutputStream << F(" atlas d ") << endl;
+  *aOutputStream << F("  Start/Stop Polling Manager:");
+  *aOutputStream << F(" atlas m 1|0 ") << endl;
 
   *aOutputStream << F("Remote Group") << endl;
   *aOutputStream << F("  Display General Remote Device Info:");

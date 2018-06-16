@@ -42,10 +42,11 @@
 
 
 // IP addressing used whent nothing stored in EEPROM
-#define DEFAULT_IP_ADDRESS   192, 168, 1, 253 // 192.168.1.253
+#define DEFAULT_IP_ADDRESS   192, 168, 1, 252 // 192.168.1.253
 #define DEFAULT_GATEWAY    192, 168, 1, 1     // 192.168.1.1
 #define DEFAULT_SUBNET_MASK  255, 255, 255, 0 // 255.255.255.0
-#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x0E, 0x94, 0xB5
+//#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFD
+#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFE
 
 // #define DEFAULT_MAC_ADDRESS 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF
 #define DEFAULT_PENDING_MAC_ADDRESS 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -53,6 +54,7 @@
 #define DEFAULT_ANALOG_POLL_RATE 2 // seconds
 #define DEFAULT_DI_DEBOUNCE_TIME 250 // ms
 #define DEFAULT_1WIRE_POLLING_INTERVAL 5000 // ms
+#define DEFAULT_ATLAS_POLLING_INTERVAL 3000 //ms
 
 // EEPROM addresses
 #define EEPROM_CONFIGURED 2        // this value stored at address
@@ -62,7 +64,7 @@
 #define EEPROM_GATEWAY_ADDR EEPROM_IP_ADDR  + sizeof(uint32_t)
 #define EEPROM_SUBNET_ADDR EEPROM_GATEWAY_ADDR + sizeof(uint32_t)
 #define EEPROM_MAC_ADDR EEPROM_SUBNET_ADDR + sizeof(uint32_t)
-#define EEPROM_ONE_WIRE_MAP EEPROM_MAC_ADDR + sizeof(uint32_t)
+#define EEPROM_ONE_WIRE_MAP EEPROM_MAC_ADDR + 6
 
 #define HEART_BEAT_PERIOD 5000     // ms
 
