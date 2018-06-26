@@ -316,19 +316,21 @@ void setup()
   temperatureMgr.scanSensors();
     #ifdef IO_DEBUG
   Serial.begin(9600);
-  //  aOutputStream->begin(9600);
 
   temperatureMgr.serialize(aOutputStream, true);
-  temperatureMgr.setOnPollCallBack(onTemperatureRead);
+
       #endif // ifdef PROCESS_TERMINAL
 
   temperatureMgr.init();
-    temperatureMgr.disableMgr();
-#if  defined(NC2_BUILD)
+  temperatureMgr.enableMgr();
+  temperatureMgr.setOnPollCallBack(onTemperatureRead);
+
+
+#if  defined(NC2_BUILD)  // no one wire on NC2 remote I/O
   temperatureMgr.disableMgr();
 #endif // if not defined(NC2_BUILD)
   Serial2.begin(9600);
-  #if defined(NC_BUILD)
+  #if defined(NC_BUILD)   // Atlas Sensors on NC remote I/O
   atlasSensorMgr.init();
   atlasSensorMgr.setPollingInterval(DEFAULT_ATLAS_POLLING_INTERVAL); // ms
   atlasSensorMgr.setEnabled(true);
@@ -337,12 +339,12 @@ void setup()
   EEPROMLoadConfig();
   Ethernet.begin(currentMAC, currentIP, currentGateway, currentSubnet);
   remoteCommandHandler.init();
-  remoteCommandHandler.addCommandHandler(  DA_TCP_COMMAND_GROUP_ATLAS,
-                                           remoteAtlasCommandHandler);
-  remoteCommandHandler.addCommandHandler( DA_TCP_COMMAND_GROUP_REMOTE,
-                                          remoteDeviceCommandHandler);
-  remoteCommandHandler.addCommandHandler(   DA_TCP_COMMAND_GROUP_HELP,
-                                            remoteHelpCommandHandler);
+  remoteCommandHandler.addCommandHandler(DA_TCP_COMMAND_GROUP_ATLAS,
+                                         remoteAtlasCommandHandler);
+  remoteCommandHandler.addCommandHandler(DA_TCP_COMMAND_GROUP_REMOTE,
+                                         remoteDeviceCommandHandler);
+  remoteCommandHandler.addCommandHandler(DA_TCP_COMMAND_GROUP_HELP,
+                                         remoteHelpCommandHandler);
   remoteCommandHandler.addCommandHandler(DA_TCP_COMMAND_GROUP_ONEWIRE,
                                          remoteOneWireCommandHandler);
   CI_001.setOnEdgeEvent(&onRestoreDefaults);
@@ -429,7 +431,6 @@ void setup()
 
 void loop()
 {
-
   MBSlave.MbsRun();
 
   refreshHostReads();
@@ -658,7 +659,6 @@ void doCheckRebootDevice()
 
   if (bitState == BIT_RISING_EDGE)
   {
-
     rebootDevice();
   }
   CY_004 = MBSlave.GetBit(CW_CY_004);
@@ -666,13 +666,13 @@ void doCheckRebootDevice()
 
 void refreshHostReads()
 {
-  MBSlave.MbData[HR_TI_001] =     (int)(temperatureMgr.getTemperature(0) * 10.0 );
-  MBSlave.MbData[HR_TI_002] =     (int)(temperatureMgr.getTemperature(1) * 10.0 );
-  MBSlave.MbData[HR_TI_003] =     (int)(temperatureMgr.getTemperature(2) * 10.0 );
-  MBSlave.MbData[HR_TI_004] =     (int)(temperatureMgr.getTemperature(3) * 10.0 );
-  MBSlave.MbData[HR_TI_005] =     (int)(temperatureMgr.getTemperature(4) * 10.0 );
-  MBSlave.MbData[HR_TI_006] =     (int)(temperatureMgr.getTemperature(5) * 10.0 );
-  MBSlave.MbData[HR_TI_007] =     (int)(temperatureMgr.getTemperature(6) * 10.0 );
+  MBSlave.MbData[HR_TI_001] =     (int)(temperatureMgr.getTemperature(0) * 10.0);
+  MBSlave.MbData[HR_TI_002] =     (int)(temperatureMgr.getTemperature(1) * 10.0);
+  MBSlave.MbData[HR_TI_003] =     (int)(temperatureMgr.getTemperature(2) * 10.0);
+  MBSlave.MbData[HR_TI_004] =     (int)(temperatureMgr.getTemperature(3) * 10.0);
+  MBSlave.MbData[HR_TI_005] =     (int)(temperatureMgr.getTemperature(4) * 10.0);
+  MBSlave.MbData[HR_TI_006] =     (int)(temperatureMgr.getTemperature(5) * 10.0);
+  MBSlave.MbData[HR_TI_007] =     (int)(temperatureMgr.getTemperature(6) * 10.0);
   MBSlave.MbData[HR_AI_000] =     AI_000.getRawSample();
   MBSlave.MbData[HR_AI_001] =     AI_001.getRawSample();
   MBSlave.MbData[HR_AI_002] =     AI_002.getRawSample();
@@ -683,11 +683,25 @@ void refreshHostReads()
 
 #if defined(NC_BUILD)
 
-  MBSlave.MbData[HR_XT_001] = (int) (atlasSensorMgr.getCachedValue(DA_ATLAS_PH) * 10.0 );
-  MBSlave.MbData[HR_XT_002] = (int) (atlasSensorMgr.getCachedValue(DA_ATLAS_EC) * 10.0 );
-  MBSlave.MbData[HR_XT_003] = (int) (atlasSensorMgr.getCachedValue(DA_ATLAS_ORB) * 10.0 );
-  MBSlave.MbData[HR_XT_004] = (int) (atlasSensorMgr.getCachedValue(DA_ATLAS_DO) * 10.0 );
-  MBSlave.MbData[HR_XT_005] = (int) (atlasSensorMgr.getCachedValue(DA_ATLAS_RTD) * 10.0 );
+  MBSlave.MbData[HR_XT_001] =
+    (int)(atlasSensorMgr.getCachedValue(DA_ATLAS_PH) * 10.0);
+  MBSlave.MbData[HR_XT_002] =
+    (int)(atlasSensorMgr.getCachedValue(DA_ATLAS_EC) * 10.0);
+  MBSlave.MbData[HR_XT_003] =
+    (int)(atlasSensorMgr.getCachedValue(DA_ATLAS_ORB) * 10.0);
+  MBSlave.MbData[HR_XT_004] =
+    (int)(atlasSensorMgr.getCachedValue(DA_ATLAS_DO) * 10.0);
+  MBSlave.MbData[HR_XT_005] =
+    (int)(atlasSensorMgr.getCachedValue(DA_ATLAS_RTD) * 10.0);
+
+#endif // if defined(NC_BUILD)
+
+#if defined(GC_BUILD)
+
+  MBSlave.MbData[HR_XT_001] = 123;
+
+  MBSlave.MbData[HR_XT_002] = 456;
+  MBSlave.MbData[HR_XT_003] = 789;
 
 #endif // if defined(NC_BUILD)
 
@@ -861,14 +875,14 @@ void EEPROMWriteCurrentIPs()
 {
   uint32_t temp32 = currentIP;
 
-  EEPROM.put(     EEPROM_IP_ADDR, temp32);
+  EEPROM.put(EEPROM_IP_ADDR,      temp32);
   temp32 = currentGateway;
   EEPROM.put(EEPROM_GATEWAY_ADDR, temp32);
   temp32 = currentSubnet;
-  EEPROM.put( EEPROM_SUBNET_ADDR, temp32);
+  EEPROM.put(EEPROM_SUBNET_ADDR,  temp32);
 
 
-  EEPROM.put(    EEPROM_MAC_ADDR, currentMAC);
+  EEPROM.put(EEPROM_MAC_ADDR,     currentMAC);
 }
 
 void EEPromWriteOneWireMaps()
@@ -907,16 +921,16 @@ void EEPROMLoadConfig()
 
   uint32_t temp32;
 
-  EEPROM.get(     EEPROM_IP_ADDR, temp32);
+  EEPROM.get(EEPROM_IP_ADDR,      temp32);
   currentIP = temp32;
 
   EEPROM.get(EEPROM_GATEWAY_ADDR, temp32);
   currentGateway = temp32;
 
-  EEPROM.get( EEPROM_SUBNET_ADDR, temp32);
+  EEPROM.get(EEPROM_SUBNET_ADDR,  temp32);
   currentSubnet = temp32;
 
-  EEPROM.get(    EEPROM_MAC_ADDR, currentMAC);
+  EEPROM.get(EEPROM_MAC_ADDR,     currentMAC);
   EEPROM.get(EEPROM_ONE_WIRE_MAP, temperatureMgr.oneWireTemperatureMap);
 
     #ifdef IO_DEBUG
@@ -936,13 +950,13 @@ void EEPROMWriteDefaultConfig()
   EEPROM.update(EEPROM_CONFIG_FLAG_ADDR, configFlag);
   uint32_t temp32 = defaultIP;
 
-  EEPROM.put(     EEPROM_IP_ADDR, temp32);
+  EEPROM.put(EEPROM_IP_ADDR,      temp32);
   temp32 = defaultGateway;
   EEPROM.put(EEPROM_GATEWAY_ADDR, temp32);
   temp32 = defaultSubnet;
-  EEPROM.put( EEPROM_SUBNET_ADDR, temp32);
+  EEPROM.put(EEPROM_SUBNET_ADDR,  temp32);
 
-  EEPROM.put(    EEPROM_MAC_ADDR, defaultMAC);
+  EEPROM.put(EEPROM_MAC_ADDR,     defaultMAC);
   temperatureMgr.resetMaps();
   EEPromWriteOneWireMaps();
 }
@@ -951,7 +965,6 @@ void remoteAtlasCommandHandler(uint8_t argc, char **argv, Stream *aOutputStream)
 {
     #if defined(NC_BUILD)
   char command = argv[0][0];
-
 
 
   switch (command) {
@@ -983,22 +996,24 @@ void remoteAtlasCommandHandler(uint8_t argc, char **argv, Stream *aOutputStream)
     }
     else *aOutputStream << F("Unrecongized format for command")  << endl;
     break;
-    case 'm':
 
-      if (argc == 2)
+  case 'm':
+
+    if (argc == 2)
+    {
+      uint8_t mode = atoi(argv[1]);
+
+      if ((mode == 1) or (mode == 0))
       {
-        uint8_t mode = atoi(argv[1]);
+        atlasSensorMgr.setEnabled(mode);
 
-        if ((mode == 1) or (mode == 0))
-        {
-          atlasSensorMgr.setEnabled( mode );
-
-          *aOutputStream << F("Mode set to:")  << mode << endl;
-        }
-        else *aOutputStream << F("Invalid Mode:") << mode << endl;
+        *aOutputStream << F("Mode set to:")  << mode << endl;
       }
-      else *aOutputStream << F("Unrecongized format for command")  << endl;
-      break;
+      else *aOutputStream << F("Invalid Mode:") << mode << endl;
+    }
+    else *aOutputStream << F("Unrecongized format for command")  << endl;
+    break;
+
   default:
     *aOutputStream << F("Invalid Command for Atlas")  << endl;
   }
@@ -1100,7 +1115,6 @@ void remoteHelpCommandHandler(uint8_t argc,
 void remoteOneWireCommandHandler(uint8_t argc, char  **argv,
                                  Stream *aOutputStream)
 {
-
   #if  not defined(NC2_BUILD)
   char command = argv[0][0];
 
@@ -1145,7 +1159,7 @@ void remoteOneWireCommandHandler(uint8_t argc, char  **argv,
       aOutputStream->println(argv[i]);
      }
    */
-  #else
-       *aOutputStream << F("1-Wire not Implemented on this Remote I/O")  << endl;
-  #endif
+  #else // if  not defined(NC2_BUILD)
+  *aOutputStream << F("1-Wire not Implemented on this Remote I/O")  << endl;
+  #endif // if  not defined(NC2_BUILD)
 }
