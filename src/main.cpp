@@ -37,6 +37,7 @@
 #include <DA_AtlasMgr.h>
 
 #include "DA_TCPCommandHandler.h"
+#include "DA_SCD30.h"
 #include "remoteIO.h"
 #include "Controllino.h"
 
@@ -323,14 +324,21 @@ void setup()
 
   temperatureMgr.init();
   temperatureMgr.enableMgr();
+#ifdef IO_DEBUG
   temperatureMgr.setOnPollCallBack(onTemperatureRead);
+#endif // ifdef IO_DEBUG
 
+// GC has CO2/Humity/Temoerature Sensor
+#if defined(GC_BUILD)
+  Serial2.begin(SCD30_BAUD);
+#endif
 
-#if  defined(NC2_BUILD)  // no one wire on NC2 remote I/O
-  temperatureMgr.disableMgr();
-#endif // if not defined(NC2_BUILD)
+  #if defined(NC_BUILD)                                              // Atlas
+                                                                     // Sensors
+                                                                     // on NC
+                                                                     // remote
+                                                                     // I/O
   Serial2.begin(9600);
-  #if defined(NC_BUILD)   // Atlas Sensors on NC remote I/O
   atlasSensorMgr.init();
   atlasSensorMgr.setPollingInterval(DEFAULT_ATLAS_POLLING_INTERVAL); // ms
   atlasSensorMgr.setEnabled(true);

@@ -42,11 +42,11 @@
 
 
 // IP addressing used whent nothing stored in EEPROM
-#define DEFAULT_IP_ADDRESS   192, 168, 1, 252 // 192.168.1.252 NC 251 NC2 253 GC
+#define DEFAULT_IP_ADDRESS   192, 168, 1, 253 // 192.168.1.252 NC 251 NC2 253 GC
 #define DEFAULT_GATEWAY    192, 168, 1, 1     // 192.168.1.1
 #define DEFAULT_SUBNET_MASK  255, 255, 255, 0 // 255.255.255.0
-//#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFD //GC
-#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFE  // NC
+#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFD //GC
+//#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFE  // NC
 //#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFF  // NC2
 
 // #define DEFAULT_MAC_ADDRESS 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF
@@ -113,7 +113,7 @@
 
 #define CW_DY_000   0        // Relay Output 0
 #define CW_DY_001   1        // Relay Output 1
-#define CW_DY_002   2        // Relay Output 1
+#define CW_DY_002   2        // Relay Output 2
 #define CW_DY_003   3        // Relay Output 3
 #define CW_DY_004   4        // Relay Output 4
 #define CW_DY_005   5        // Relay Output 5
