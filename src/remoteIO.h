@@ -195,7 +195,7 @@
 #define HR_TI_007_ID_H   118        //  1-Wire Temperature 7 (UID) High
 #define HR_TI_007_ID_L   120        //  1-Wire Temperature 7 (UID) Low
 
-#define HW_AY_000   130        // Analog Output 0 Value (0-10V)
+#define HW_AY_000   130         // Analog Output 0 Value (0-10V)
 #define HW_AY_001   131        // Analog Output 1 Value (0-10V)
 
 // TODO change address
