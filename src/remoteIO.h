@@ -33,6 +33,8 @@
 
 #endif // if defined(GC_BUILD)
 
+//#define IO_DEBUG
+#undef IO_DEBUG
 #define APP_BUILD_DATE 1529013511L
 
 // detecting modbuss coil  change
@@ -42,8 +44,8 @@
 
 
 // IP addressing used whent nothing stored in EEPROM
-#define DEFAULT_IP_ADDRESS   192, 168, 1, 253 // 192.168.1.252 NC 251 NC2 253 GC
-#define DEFAULT_GATEWAY    192, 168, 1, 1     // 192.168.1.1
+#define DEFAULT_IP_ADDRESS   192, 168, 0, 253 // 192.168.1.252 NC 251 NC2 253 GC
+#define DEFAULT_GATEWAY    192, 168, 0, 1     // 192.168.1.1
 #define DEFAULT_SUBNET_MASK  255, 255, 255, 0 // 255.255.255.0
 #define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFD //GC
 //#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFE  // NC
@@ -192,9 +194,11 @@
 #define HR_TI_006_ID_L   116        //  1-Wire Temperature 6 (UID) Low
 #define HR_TI_007_ID_H   118        //  1-Wire Temperature 7 (UID) High
 #define HR_TI_007_ID_L   120        //  1-Wire Temperature 7 (UID) Low
-#define HW_AY_000   10        // Analog Output 0 Value (0-10V)
-#define HW_AY_001   11        // Analog Output 1 Value (0-10V)
 
+#define HW_AY_000   130        // Analog Output 0 Value (0-10V)
+#define HW_AY_001   131        // Analog Output 1 Value (0-10V)
+
+// TODO change address
 #define HW_CI_006_PV   50        // Change  IP Address (decimal format)
 #define HW_CI_007_PV   52        // Change IP Gateway (decimal format)
 #define HW_CI_008_PV   54        // Change IP Subnet Mask (decimal format)

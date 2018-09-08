@@ -291,7 +291,7 @@ bool CY_001 = false; // restore defaults
 bool CY_002 = false; // rescan one wire temperatures devices
 bool CY_004 = false; // reboot remote I/O
 
-    #ifdef IO_DEBUG
+    #if defined(IO_DEBUG)
 void onTemperatureRead()
 {
   *aOutputStream << "New Sample" << endl;
@@ -315,7 +315,8 @@ void setup()
   temperatureMgr.setPollingInterval(DEFAULT_1WIRE_POLLING_INTERVAL);
   temperatureMgr.setBlockingRead(false);
   temperatureMgr.scanSensors();
-    #ifdef IO_DEBUG
+
+    #if defined(IO_DEBUG)
   Serial.begin(9600);
 
   temperatureMgr.serialize(aOutputStream, true);
@@ -324,7 +325,7 @@ void setup()
 
   temperatureMgr.init();
   temperatureMgr.enableMgr();
-#ifdef IO_DEBUG
+    #if defined(IO_DEBUG)
   temperatureMgr.setOnPollCallBack(onTemperatureRead);
 #endif // ifdef IO_DEBUG
 
@@ -454,6 +455,7 @@ void loop()
   atlasSensorMgr.refresh();
   #endif // if defined(NC_BUILD)
   remoteCommandHandler.refresh();
+  //AY_000.serialize(aOutputStream, true);
 }
 
 void refreshAnalogs()
@@ -521,7 +523,7 @@ void onHeartBeat()
  */
 void onRestoreDefaults(bool aValue, int aPin)
 {
-    #ifdef IO_DEBUG
+    #if defined(IO_DEBUG)
   *aOutputStream << "onRestoreDefaults()" << endl;
     #endif // ifdef IO_DEBUG
 
@@ -644,7 +646,7 @@ void doCheckForRescanOneWire()
   if (bitState == BIT_RISING_EDGE)
   {
     temperatureMgr.scanSensors();
-    #ifdef IO_DEBUG
+    #if defined(IO_DEBUG)
     temperatureMgr.serialize(aOutputStream, true);
     #endif // ifdef IO_DEBUG
   }
@@ -653,7 +655,7 @@ void doCheckForRescanOneWire()
 
 void rebootDevice()
 {
-  #ifdef IO_DEBUG
+    #if defined(IO_DEBUG)
   *aOutputStream << "rebooting..." << endl;
   #endif // ifdef IO_DEBUG
   wdt_enable(WDTO_15MS); // turn on the WatchDog
@@ -941,7 +943,7 @@ void EEPROMLoadConfig()
   EEPROM.get(EEPROM_MAC_ADDR,     currentMAC);
   EEPROM.get(EEPROM_ONE_WIRE_MAP, temperatureMgr.oneWireTemperatureMap);
 
-    #ifdef IO_DEBUG
+    #if defined(IO_DEBUG)
   *aOutputStream << "currentIP:" << currentIP << endl;
   *aOutputStream << "currentGateway:" << currentGateway << endl;
   *aOutputStream << "currentSubnet:" << currentSubnet << endl;
