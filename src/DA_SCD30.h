@@ -6,17 +6,17 @@
  *
  *
  *  @section DESCRIPTION
- *  Communicate with SDC30 CO2/Humidity/Temperature Sensor
+ *  Communicate with SCD30 CO2/Humidity/Temperature Sensor
  *  via modbus
  *
  *https://www.sensirion.com/fileadmin/user_upload/customers/sensirion/Dokumente/0_Datasheets/CO2/Sensirion_CO2_Sensors_SCD30_Preliminary-Datasheet.pdf
  *
  */
 
- #ifndef DA_SDC30_H
- #define DA_SDC30_H
- #include <DA_Input.h>
- #include <ModbusMaster.h>
+#ifndef DA_SCD30_H
+#define DA_SCD30_H
+#include <DA_Input.h>
+#include <ModbusMaster.h>
 
 // hardcoded in sensor
 #define SCD30_BAUD 19200
@@ -24,69 +24,63 @@
 #define SC30S_TARTSTOP 1
 #define SCD30_PARITY
 #define SCD30_ADDRESS 0x61
-
+#define SCD30_POLLING_INTERVAL 5000 // 5 s
 // trigger continuous measurement write 0 no pressure compensation
 // 700-1200 mBar oteherwise
-#define SDC30_CONTINUOUS_MEASUREMENT 0x36
+#define SCD30_CONTINUOUS_MEASUREMENT 0x36
 
 // send a 1 using function code 6 ad this address to disable continuous
 //  measurement
-#define SDC30_STOP_CONTINUOUS_MEASUREMENT 0x37
+#define SCD30_STOP_CONTINUOUS_MEASUREMENT 0x37
 // get/set altitude compensation in meters
-#define SDC30_ALTITUDE_COMPENSATION 0x38
+#define SCD30_ALTITUDE_COMPENSATION 0x38
 
 // get/set measurement interval in seconds
-#define SDC30_MEASURE_INTERVAL 0x25
+#define SCD30_MEASURE_INTERVAL 0x25
 
 // (de)-activate self-calibration 1=activate
-#define SDC30_AUTOMATIC_SELF_CALIBRATION 0x40
+#define SCD30_AUTOMATIC_SELF_CALIBRATION 0x40
 // =1 via function code 4 at this address when data is ready to read
-#define SDC30_DATA_READY_STATUS 0x27
+#define SCD30_DATA_READY_STATUS 0x27
 
 // read via function code 4 the CO2, humidity, and temperature
-#define SDC30_READ_MEASUREMENT 0x28
-#define SDC30_READ_SZ 18 // bytes to read 0x28 to 0x33
+#define SCD30_READ_MEASUREMENT 0x28
+#define SCD30_READ_SZ 6 // 3 floats
 
+#define SCD30_NO_RESPONSE -126
+#define SCD30_DISABLED -127
 
-#define SDC30_NO_RESPONSE -127
-
-
-class DA_SDC30 : public DA_Input {
+class DA_SCD30 : public DA_Input {
 public:
-
-  DA_SDC30(Stream& s);
+  DA_SCD30(Stream &s);
   void init();
-  inline float getCachedCO2() __attribute__((always_inline))
-  {
-    return curCO2;
-  }
+  inline float getCachedCO2() __attribute__((always_inline)) { return curCO2; }
 
-  inline float getCachedHumidity() __attribute__((always_inline))
-  {
+  inline float getCachedHumidity() __attribute__((always_inline)) {
     return curHumidity;
   }
 
-  inline float getCachedRemperature() __attribute__((always_inline))
-  {
+  inline float getCachedTemperature() __attribute__((always_inline)) {
     return curTemperature;
   }
 
+  void startContiousMeasurement();
+  void stopContiousMeasurement();
   // void receiveRaw( char* aResult );
-  void serialize(Stream *aOutputStream,
-                 bool    includeCR);
+  void serialize(Stream *aOutputStream, bool includeCR);
 
 protected:
-
   void onRefresh();
   void refreshAll();
+  float getSensorReading(uint8_t aIndex);
 
 private:
   ModbusMaster node;
-  float curCO2         = SDC30_NO_RESPONSE;
-  float curHumidity    = SDC30_NO_RESPONSE;
-  float curTemperature = SDC30_NO_RESPONSE;
+  float curCO2 = 0;
+  float curTemperature = 0;
+  float curHumidity = 0;
 
-  Stream& serialPort;
+  Stream &serialPort;
 };
 
-  #endif // DA_SDC30_H
+#endif // DA_SCD30_H

@@ -19,6 +19,9 @@
 #include <EEPROM.h>
 #include <MgsModbus.h> // cchange memory size here
 
+#include <Encoder.h>
+
+
 
 #include <Streaming.h>
 
@@ -218,6 +221,14 @@ DA_DiscreteOutput DY_021 = DA_DiscreteOutput(
   CONTROLLINO_PIN_HEADER_DIGITAL_OUT_15,
   HIGH);
 
+
+  #if defined(GC_BUILD)
+    DA_SCD30 SCD30Sensor = DA_SCD30( Serial2 );
+    //Encoder lightPosition(CONTROLLINO_IN0, CONTROLLINO_IN1);
+    Encoder lightPosition(CONTROLLINO_IN0, CONTROLLINO_IN1);
+  #endif
+
+
 #if not defined(NC_BUILD)
 DA_DiscreteOutput DY_018 = DA_DiscreteOutput(
   CONTROLLINO_PIN_HEADER_DIGITAL_OUT_14,
@@ -332,6 +343,10 @@ void setup()
 // GC has CO2/Humity/Temoerature Sensor
 #if defined(GC_BUILD)
   Serial2.begin(SCD30_BAUD);
+
+  SCD30Sensor.init();
+  SCD30Sensor.setPollingInterval( DEFAULT_SC30_POLLING_INTERVAL );
+
 #endif
 
   #if defined(NC_BUILD)                                              // Atlas
@@ -339,7 +354,7 @@ void setup()
                                                                      // on NC
                                                                      // remote
                                                                      // I/O
-  Serial2.begin(9600);
+  Serial2.begin(DA_ATLAS_BAUD);
   atlasSensorMgr.init();
   atlasSensorMgr.setPollingInterval(DEFAULT_ATLAS_POLLING_INTERVAL); // ms
   atlasSensorMgr.setEnabled(true);
@@ -438,9 +453,21 @@ void setup()
   ENABLE_XT007_SENSOR_INTERRUPTS();
 }
 
+
+long oldPosition  = -999;
+
 void loop()
 {
   MBSlave.MbsRun();
+
+
+  long newPosition = lightPosition.read();
+  if (newPosition != oldPosition) {
+    oldPosition = newPosition;
+        *aOutputStream << "Pos:" << newPosition << endl ;
+
+  }
+
 
   refreshHostReads();
   processHostWrites();
@@ -450,6 +477,12 @@ void loop()
   refreshDiscreteInputs();
   KI_001.refresh();
   KI_004.refresh();
+
+
+    #if defined(GC_BUILD)
+      SCD30Sensor.refresh();
+    #endif
+
 
     #if defined(NC_BUILD)
   atlasSensorMgr.refresh();
@@ -708,10 +741,11 @@ void refreshHostReads()
 
 #if defined(GC_BUILD)
 
-  MBSlave.MbData[HR_XT_001] = 123;
+  MBSlave.MbData[HR_XT_001] = (int) (SCD30Sensor.getCachedCO2() * 10.0);
+  MBSlave.MbData[HR_XT_002] = (int) (SCD30Sensor.getCachedHumidity() * 10.0);
+  MBSlave.MbData[HR_XT_003] = (int) (SCD30Sensor.getCachedTemperature() * 10.0);
+//  SCD30Sensor.serialize(aOutputStream,true);
 
-  MBSlave.MbData[HR_XT_002] = 456;
-  MBSlave.MbData[HR_XT_003] = 789;
 
 #endif // if defined(NC_BUILD)
 
