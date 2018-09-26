@@ -58,6 +58,7 @@
 #define DEFAULT_DI_DEBOUNCE_TIME 250 // ms
 #define DEFAULT_1WIRE_POLLING_INTERVAL 5000 // ms
 #define DEFAULT_ATLAS_POLLING_INTERVAL 3000 //ms
+#define DEFAULT_SC30_POLLING_INTERVAL 5000 // ms
 
 // EEPROM addresses
 #define EEPROM_CONFIGURED 2        // this value stored at address
