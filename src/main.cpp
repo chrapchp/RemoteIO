@@ -602,14 +602,12 @@ void doLightPositionControl() {
         lMotorState = false;
     }
 
-// save max count to EEPROM as par tof the calibration process
+    // save max count to EEPROM as par tof the calibration process
     if (isLightPositionWriteRequest()) {
       lightPositionControlData.maxPulses =
           lightPositionControlData.currentPositionCount;
       EEPROM.put(EEPROM_LIGHT_POSITION_RAW_MAX_COUNT,
                  lightPositionControlData.maxPulses);
-
-
     }
 
   } else { // normal oprational mode (not calibrating)
@@ -622,26 +620,27 @@ void doLightPositionControl() {
       lDirection = false;
       lMotorState = true;
       lightPositionControlData.isControlling = true;
-    } else
-    {
+    } else {
       lMotorState = false;
-      if( lightPositionControlData.isControlling)
-      {
-          *aOutputStream << "************************** SAVE TO EEPROM" << endl;
-          lightPositionControlData.isControlling = false;
+      if (lightPositionControlData.isControlling) {
+        *aOutputStream << "************************** SAVE TO EEPROM" << endl;
+        lightPositionControlData.isControlling = false;
+        EEPROM.put(EEPROM_LIGHT_CURRENT_POSITION_RAW_COUNT,
+                   lightPositionControlData.currentPositionCount);
       }
     }
   }
   DY_006.write(lDirection);
   DY_007.write(lMotorState);
-  #if defined(IO_DEBUG)
-    *aOutputStream << "Pos:" << lightPositionControlData.currentPositionCount
-                   << "  0-100:" << lightPositionControlData.pv
-                   << " SP:" << lightPositionControlData.setpoint
-                   << " error:" << lError << " dir:" << lDirection
-                   << " motorState:" << lMotorState << " ZIC_015_MH:" << ZIC_015_MH
-                   << " ZIC_015_SV:" << ZIC_015_SV << " MaxCount:" << lightPositionControlData.maxPulses << endl;
-  #endif
+#if defined(IO_DEBUG)
+  *aOutputStream << "Pos:" << lightPositionControlData.currentPositionCount
+                 << "  0-100:" << lightPositionControlData.pv
+                 << " SP:" << lightPositionControlData.setpoint
+                 << " error:" << lError << " dir:" << lDirection
+                 << " motorState:" << lMotorState
+                 << " ZIC_015_MH:" << ZIC_015_MH << " ZIC_015_SV:" << ZIC_015_SV
+                 << " MaxCount:" << lightPositionControlData.maxPulses << endl;
+#endif
 }
 /**
  * [refreshTemperatureUUID refesh 1-wire UUID values to host]
@@ -1017,8 +1016,15 @@ void EEPROMLoadConfig()
 
   EEPROM.get(EEPROM_LIGHT_POSITION_RAW_MAX_COUNT,
              lightPositionControlData.maxPulses);
+
+  EEPROM.get(EEPROM_LIGHT_CURRENT_POSITION_RAW_COUNT, temp32);
+  lightPosition.write(temp32);
+
 #if defined(IO_DEBUG)
-   *aOutputStream << "maxLightPulses:" << lightPositionControlData.maxPulses << endl;
+  *aOutputStream << "maxLightPulses:" << lightPositionControlData.maxPulses
+                 << endl;
+                 *aOutputStream << "temp32:" << temp32
+                                << endl;
   *aOutputStream << "currentIP:" << currentIP << endl;
   *aOutputStream << "currentGateway:" << currentGateway << endl;
   *aOutputStream << "currentSubnet:" << currentSubnet << endl;
