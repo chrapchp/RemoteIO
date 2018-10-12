@@ -39,6 +39,9 @@
 #include "Controllino.h"
 #include "DA_SCD30.h"
 #include "DA_TCPCommandHandler.h"
+#if defined(GC_BUILD)
+#include "DA_LightPositionMgr.h"
+#endif
 #include "remoteIO.h"
 
 char atlasrxBuff[DA_ATLAS_RX_BUF_SZ];
@@ -50,16 +53,6 @@ DA_AtlasMgr atlasSensorMgr =
                 CONTROLLINO_PIN_HEADER_DIGITAL_OUT_13,
                 CONTROLLINO_PIN_HEADER_DIGITAL_OUT_14);
 #endif // if defined(NC_BUILD)
-
-#if defined(GC_BUILD)
-DA_SCD30 SCD30Sensor = DA_SCD30(Serial2);
-// Encoder lightPosition(CONTROLLINO_IN0, CONTROLLINO_IN1);
-Encoder lightPosition(CONTROLLINO_IN1, CONTROLLINO_IN0);
-LightPositionControlData lightPositionControlData;
-#else
-DA_FlowMeter XT_006(XT006_SENSOR_INTERUPT_PIN, FLOW_CALC_PERIOD_SECONDS);
-DA_FlowMeter XT_007(XT007_SENSOR_INTERUPT_PIN, FLOW_CALC_PERIOD_SECONDS);
-#endif
 
 DA_TCPCommandHandler remoteCommandHandler = DA_TCPCommandHandler();
 
@@ -99,8 +92,9 @@ void onXT_007_PulseIn();
 void onFlowCalc();
 #else
 void doLightPositionControl();
-void onHomeLimitSwitchRisingEdge();
 bool isLightPositionWriteRequest();
+void onLightPositionStop(DA_LightPositionMgr::DA_LightMgrState aReason);
+void onRefreshLightManager();
 #endif
 
 void processHostWrites();
@@ -202,7 +196,7 @@ DA_DiscreteOutput DY_017 = DA_DiscreteOutput(CONTROLLINO_DO7, HIGH);
 DA_DiscreteOutput DY_021 =
     DA_DiscreteOutput(CONTROLLINO_PIN_HEADER_DIGITAL_OUT_15, HIGH);
 
-#if not defined(NC_BUILD)
+#if not defined(NC_BUILD) // NC uses these fpr atlas sensors
 DA_DiscreteOutput DY_018 =
     DA_DiscreteOutput(CONTROLLINO_PIN_HEADER_DIGITAL_OUT_14, HIGH);
 
@@ -242,8 +236,19 @@ DA_NonBlockingDelay KI_001 =
     DA_NonBlockingDelay(HEART_BEAT_PERIOD, onHeartBeat);
 uint16_t KI_001_CV = 0;
 
-// timer for flow calcs
-#if not defined(GC_BUILD)
+#if defined(GC_BUILD)
+DA_SCD30 SCD30Sensor = DA_SCD30(Serial2);
+DA_NonBlockingDelay KI_002 =
+    DA_NonBlockingDelay(LIGHT_POSITION_MGR_REFRESH_INTERVAL, onRefreshLightManager);
+// Encoder lightPosition(CONTROLLINO_IN0, CONTROLLINO_IN1);
+//
+Encoder lightPosition(CONTROLLINO_IN0, CONTROLLINO_IN1);
+DA_LightPositionMgr lightPositionMgr =
+    DA_LightPositionMgr(lightPosition, DY_019, DY_020, DY_018);
+
+#else
+DA_FlowMeter XT_006(XT006_SENSOR_INTERUPT_PIN, FLOW_CALC_PERIOD_SECONDS);
+DA_FlowMeter XT_007(XT007_SENSOR_INTERUPT_PIN, FLOW_CALC_PERIOD_SECONDS);
 DA_NonBlockingDelay KI_004 =
     DA_NonBlockingDelay(FLOW_CALC_PERIOD_SECONDS * 1000, onFlowCalc);
 #endif
@@ -298,7 +303,7 @@ void setup() {
 
   SCD30Sensor.init();
   SCD30Sensor.setPollingInterval(DEFAULT_SC30_POLLING_INTERVAL);
-  DI_007.setOnEdgeEvent(&onHomeLimitSwitchRisingEdge);
+  lightPositionMgr.setOnStopCallBack(onLightPositionStop);
 
 #endif
 
@@ -397,27 +402,14 @@ void setup() {
   // AOs
   AY_000.setEnabled(true);
   AY_001.setEnabled(true);
-
-  // wait for data from TBOX to arrive. What is not stored in EEPROM
-  // defaults to 0. Not much of a concern but SP for positioner is maintained
-  // by TBOX and a 0 SP will cause the light to move at startup which may not
-  // be the desired mode of operation if the actual SP is not 0
-  for (int i = 0; i < 5; i++) {
-    MBSlave.MbsRun();
-    processHostWrites();
-#if defined(IO_DEBUG)
-    *aOutputStream << endl << "Setup (" << 5 - i << ")";
-#endif // ifdef IO_DEBUG
-    delay(1200);
-  }
 }
 
 void loop() {
   MBSlave.MbsRun();
 
 #if defined(GC_BUILD)
-  doLightPositionControl();
-
+//  doLightPositionControl();
+KI_002.refresh();
 #endif
 
   refreshHostReads();
@@ -487,7 +479,10 @@ void onXT_006_PulseIn() { XT_006.handleFlowDetection(); }
 
 void onXT_007_PulseIn() { XT_007.handleFlowDetection(); }
 #endif
-void onHeartBeat() { KI_001_CV++; }
+void onHeartBeat() {
+   KI_001_CV++;
+
+ }
 
 /**
  * [onRestoreDefaults restore defaults in EEPROM]
@@ -536,22 +531,14 @@ uint32_t byteSwap32(uint32_t aValue) {
   return w1 << 16 | w2;
 }
 
-void computeLightPosition() {
-  lightPositionControlData.currentPositionCount = lightPosition.read();
-  if (lightPositionControlData.currentPositionCount !=
-      lightPositionControlData.previousPositionCount) {
-    lightPositionControlData.previousPositionCount =
-        lightPositionControlData.currentPositionCount;
-    lightPositionControlData.pv =
-        100.0 - (100.0 * lightPositionControlData.currentPositionCount /
-                 lightPositionControlData.maxPulses);
-  }
+#if defined(GC_BUILD)
+void onLightPositionStop(DA_LightPositionMgr::DA_LightMgrState aReason) {
+  EEPROM.put(EEPROM_LIGHT_CURRENT_POSITION_RAW_COUNT,
+             lightPositionMgr.getRawPV());
 }
 
-void onHomeLimitSwitchRisingEdge() {
-
-  //  lightPositionControlData.isHomed = true;
-  DY_007.write(false);
+void onRefreshLightManager() {
+  doLightPositionControl();
 }
 /**
  * [doLightPositionControl ]
@@ -559,89 +546,44 @@ void onHomeLimitSwitchRisingEdge() {
  *  if the limit switch is met stop the motor
  * Note: 100% -> lowest  light position e.g. close to plants
  *        0   -> highest light position e.g. away to plants
- *        when arm is completely retracted count = 0
- *        when arm is extending counter is increasing
- *        when arm is retracting counter is decreasing
+ *        when arm is completely retracted count = maxcount
+ *        when arm is extending counter is decreasing
+ *        when arm is retracting counter is increasing
  *        when arm is extending lights are going up
  *        when arm is retracting lights are going down
  */
 void doLightPositionControl() {
 
-  bool lLimitSwitch = DI_007.getSample(); // at the lowest allowed position
-  bool lDirection;
+  bool lXZ_018 = true, lXZ_019 = true;
   float lError;
   bool lMotorState = false; // default off
 
-  bool ZIC_015_MH = MBSlave.GetBit(CW_ZIC_015_MH);
-  bool ZIC_015_MT = MBSlave.GetBit(CW_ZIC_015_MT);
-  bool ZIC_015_CL = MBSlave.GetBit(CW_ZIC_015_CL);
   bool ZIC_015_SV = MBSlave.GetBit(CW_ZIC_015_SV);
 
-  computeLightPosition();
+  lightPositionMgr.setCalibrationMode(MBSlave.GetBit(CW_ZIC_015_CL));
+  lightPositionMgr.setCalibrationMoveTop(MBSlave.GetBit(CW_ZIC_015_MT));
+  lightPositionMgr.setCalibrationMoveBottom(MBSlave.GetBit(CW_ZIC_015_MB));
+  lightPositionMgr.refresh();
+  //
 
-  // if in home reset position counter
-  if (lLimitSwitch)
-    lightPosition.write(0);
-
-  // Calibration mode
-  if (ZIC_015_CL) {
-    // if a HMI from host to move to home and it is not in home position
-    // don't go home if the go to top command is in progress
-    if (ZIC_015_MH && !ZIC_015_MT) {
-      lDirection = false;
-      lMotorState = !lLimitSwitch;
-    }
-
-    // if a HMI from host to move to top position
-    if (ZIC_015_MT) {
-      // don't go top if the go to home command is in progress
-      if (!ZIC_015_MH) {
-        lDirection = true;
-        lMotorState = true;
-      } else
-        lMotorState = false;
-    }
-
-    // save max count to EEPROM as par tof the calibration process
-    if (isLightPositionWriteRequest()) {
-      lightPositionControlData.maxPulses =
-          lightPositionControlData.currentPositionCount;
-      EEPROM.put(EEPROM_LIGHT_POSITION_RAW_MAX_COUNT,
-                 lightPositionControlData.maxPulses);
-    }
-
-  } else { // normal oprational mode (not calibrating)
-    lError = lightPositionControlData.pv - lightPositionControlData.setpoint;
-    if (lError > DEFAULT_LIGHT_POSITION_DEADBAND) {
-      lDirection = true; // up
-      lMotorState = true;
-      lightPositionControlData.isControlling = true;
-    } else if (lError < -DEFAULT_LIGHT_POSITION_DEADBAND) {
-      lDirection = false;
-      lMotorState = true;
-      lightPositionControlData.isControlling = true;
-    } else {
-      lMotorState = false;
-      if (lightPositionControlData.isControlling) {
-        *aOutputStream << "************************** SAVE TO EEPROM" << endl;
-        lightPositionControlData.isControlling = false;
-        EEPROM.put(EEPROM_LIGHT_CURRENT_POSITION_RAW_COUNT,
-                   lightPositionControlData.currentPositionCount);
-      }
-    }
+  // save max count to EEPROM as par tof the calibration process
+  if (isLightPositionWriteRequest()) {
+    lightPositionMgr.setMaxPulses(lightPositionMgr.getRawPV());
+    EEPROM.put(EEPROM_LIGHT_POSITION_RAW_MAX_COUNT,
+               lightPositionMgr.getMaxPulses());
   }
-  DY_006.write(lDirection);
-  DY_007.write(lMotorState);
-#if defined(IO_DEBUG)
-  *aOutputStream << "Pos:" << lightPositionControlData.currentPositionCount
-                 << "  0-100:" << lightPositionControlData.pv
-                 << " SP:" << lightPositionControlData.setpoint
-                 << " error:" << lError << " dir:" << lDirection
-                 << " motorState:" << lMotorState
-                 << " ZIC_015_MH:" << ZIC_015_MH << " ZIC_015_SV:" << ZIC_015_SV
-                 << " MaxCount:" << lightPositionControlData.maxPulses << endl;
-#endif
+
+
+     #if defined(IO_DEBUG)
+       lightPositionMgr.serialize(aOutputStream, true);
+
+     #endif
+
+
+
 }
+
+#endif
 /**
  * [refreshTemperatureUUID refesh 1-wire UUID values to host]
  * @param aModbusAddressLow  [modbus address for lower 16 bits]
@@ -739,12 +681,11 @@ void doCheckRebootDevice() {
 }
 
 #if defined(GC_BUILD)
-
+bool previousZIC_015_SV = false;
 bool isLightPositionWriteRequest() {
   uint8_t bitState =
-      detectTransition(MBSlave.GetBit(CW_ZIC_015_SV),
-                       lightPositionControlData.previousZIC_015_SV);
-  lightPositionControlData.previousZIC_015_SV = MBSlave.GetBit(CW_ZIC_015_SV);
+      detectTransition(MBSlave.GetBit(CW_ZIC_015_SV), previousZIC_015_SV);
+  previousZIC_015_SV = MBSlave.GetBit(CW_ZIC_015_SV);
   return (bitState == BIT_RISING_EDGE);
 }
 #endif
@@ -782,16 +723,18 @@ void refreshHostReads() {
 
 #if defined(GC_BUILD)
 
-  MBSlave.MbData[HR_XT_001] = (uint16_t)(SCD30Sensor.getCachedCO2() * 10.0);
+blconvert.val = (int32_t) SCD30Sensor.getCachedCO2() * 10;
+MBSlave.MbData[HR_XT_001DW] = blconvert.regsl[1];
+MBSlave.MbData[HR_XT_001DW + 1] = blconvert.regsl[0];
+
+
   MBSlave.MbData[HR_XT_002] =
       (uint16_t)(SCD30Sensor.getCachedHumidity() * 10.0);
   MBSlave.MbData[HR_XT_003] = (int)(SCD30Sensor.getCachedTemperature() * 10.0);
 
-  MBSlave.MbData[HR_ZI_015] = (uint16_t)(lightPositionControlData.pv * 10.0);
-  MBSlave.MbData[HR_ZI_015_RAW] =
-      (uint16_t)(lightPositionControlData.currentPositionCount);
+  MBSlave.MbData[HR_ZI_015] = (uint16_t)(lightPositionMgr.getPV() * 10.0);
+  MBSlave.MbData[HR_ZI_015_RAW] = (uint16_t)(lightPositionMgr.getRawPV());
 
-//  SCD30Sensor.serialize(aOutputStream,true);
 
 #endif // if defined(NC_BUILD)
 
@@ -889,10 +832,8 @@ void processHostWrites() {
   DY_003.write(MBSlave.GetBit(CW_DY_003));
   DY_004.write(MBSlave.GetBit(CW_DY_004));
   DY_005.write(MBSlave.GetBit(CW_DY_005));
-#if not defined(GC_BUILD)
   DY_006.write(MBSlave.GetBit(CW_DY_006));
   DY_007.write(MBSlave.GetBit(CW_DY_007));
-#endif
   DY_008.write(MBSlave.GetBit(CW_DY_008));
   DY_009.write(MBSlave.GetBit(CW_DY_009));
   DY_010.write(MBSlave.GetBit(CW_DY_010));
@@ -904,7 +845,7 @@ void processHostWrites() {
   DY_016.write(MBSlave.GetBit(CW_DY_016));
   DY_017.write(MBSlave.GetBit(CW_DY_017));
   DY_021.write(MBSlave.GetBit(CW_DY_021));
-#if not defined(NC_BUILD)
+#if defined(NC2_BUILD)
   DY_018.write(MBSlave.GetBit(CW_DY_018));
   DY_019.write(MBSlave.GetBit(CW_DY_019));
   DY_020.write(MBSlave.GetBit(CW_DY_020));
@@ -917,7 +858,11 @@ void processHostWrites() {
   // AY_000.serialize( aOutputStream, true);
   AY_001.writeAO(MBSlave.MbData[HW_AY_001]);
 #if defined(GC_BUILD)
-  lightPositionControlData.setpoint = MBSlave.MbData[HW_ZIC_015_SP];
+  uint16_t t_sp = MBSlave.MbData[HW_ZIC_015_SP];
+  if (lightPositionMgr.getSP() != t_sp) {
+    lightPositionMgr.setSetpoint(t_sp);
+    EEPROM.put(EEPROM_LIGHT_POSITION_SP, t_sp);
+  }
 #endif
   // DO TImer presets controllino: Active High reverse
 
@@ -1001,6 +946,7 @@ void EEPROMLoadConfig()
   }
 
   uint32_t temp32;
+  uint16_t temp16;
 
   EEPROM.get(EEPROM_IP_ADDR, temp32);
   currentIP = temp32;
@@ -1014,22 +960,29 @@ void EEPROMLoadConfig()
   EEPROM.get(EEPROM_MAC_ADDR, currentMAC);
   EEPROM.get(EEPROM_ONE_WIRE_MAP, temperatureMgr.oneWireTemperatureMap);
 
-  EEPROM.get(EEPROM_LIGHT_POSITION_RAW_MAX_COUNT,
-             lightPositionControlData.maxPulses);
 
+#if defined(GC_BUILD)
+  EEPROM.get(EEPROM_LIGHT_POSITION_RAW_MAX_COUNT, temp32);
+  lightPositionMgr.setMaxPulses(temp32);
+*aOutputStream << "mx:" << temp32 << "getter:" << lightPositionMgr.getMaxPulses() << endl;
   EEPROM.get(EEPROM_LIGHT_CURRENT_POSITION_RAW_COUNT, temp32);
-  lightPosition.write(temp32);
+  lightPositionMgr.setRawPosition(temp32);
+*aOutputStream << "rw:" << temp32 << "getter:" << lightPositionMgr.getRawPV() << "getterPV:" << lightPositionMgr.getPV() << endl;
+  EEPROM.get(EEPROM_LIGHT_POSITION_SP, temp16);
+  lightPositionMgr.setSetpoint(temp16);
+  *aOutputStream << "sp:" << temp16 << "getter:" << lightPositionMgr.getSP() << endl;
+  // modbus memory map content are 0. Force a vailue at startup
+  // so that the SP is valid rather than 0. Otherwise, the actuator
+  // will try to move to 0
+  MBSlave.MbData[HW_ZIC_015_SP] = temp16;
+#endif
 
 #if defined(IO_DEBUG)
-  *aOutputStream << "maxLightPulses:" << lightPositionControlData.maxPulses
-                 << endl;
-                 *aOutputStream << "temp32:" << temp32
-                                << endl;
+  *aOutputStream << "temp32:" << temp32 << endl;
   *aOutputStream << "currentIP:" << currentIP << endl;
   *aOutputStream << "currentGateway:" << currentGateway << endl;
   *aOutputStream << "currentSubnet:" << currentSubnet << endl;
   printByteArray(currentMAC, 6, aOutputStream);
-
 #endif // ifdef IO_DEBUG
 }
 
@@ -1048,8 +1001,11 @@ void EEPROMWriteDefaultConfig() {
   EEPROM.put(EEPROM_MAC_ADDR, defaultMAC);
   temperatureMgr.resetMaps();
   EEPromWriteOneWireMaps();
+#if defined(GC_BUILD)
   EEPROM.put(EEPROM_LIGHT_POSITION_RAW_MAX_COUNT,
-             DEFAULT_MAX_PULSE_COUNT_LIGHT_POSITION);
+             lightPositionMgr.getMaxPulses());
+  EEPROM.put(EEPROM_LIGHT_POSITION_SP, lightPositionMgr.getSP());
+#endif
 }
 
 void remoteAtlasCommandHandler(uint8_t argc, char **argv,

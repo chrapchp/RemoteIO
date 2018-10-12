@@ -68,6 +68,7 @@ void DA_SCD30::onRefresh() {
     curCO2 = SCD30_NO_RESPONSE;
     curTemperature = SCD30_NO_RESPONSE;
     curHumidity = SCD30_NO_RESPONSE;
+
   }
 }
 

@@ -31,8 +31,8 @@
 
 #endif // if defined(GC_BUILD)
 
-#define IO_DEBUG
-//#undef IO_DEBUG
+//#define IO_DEBUG
+#undef IO_DEBUG
 #define APP_BUILD_DATE 1529013511L
 
 // detecting modbuss coil  change
@@ -70,7 +70,10 @@
 #define EEPROM_ONE_WIRE_MAP EEPROM_MAC_ADDR + 6
 #define EEPROM_LIGHT_POSITION_RAW_MAX_COUNT EEPROM_ONE_WIRE_MAP + sizeof(uint8_t) * 7
 #define EEPROM_LIGHT_CURRENT_POSITION_RAW_COUNT EEPROM_LIGHT_POSITION_RAW_MAX_COUNT + sizeof(uint32_t)
+#define EEPROM_LIGHT_POSITION_SP EEPROM_LIGHT_CURRENT_POSITION_RAW_COUNT + sizeof(uint32_t)
+
 #define HEART_BEAT_PERIOD 5000 // ms
+#define LIGHT_POSITION_MGR_REFRESH_INTERVAL 150 // ms
 
 // flow meter constants
 #define FLOW_CALC_PERIOD_SECONDS 1 // flow rate calc period s
@@ -147,10 +150,11 @@
 #define CW_TI_005_EN 32  // 1-Wire Temperature 5 Enabled
 #define CW_TI_006_EN 33  // 1-Wire Temperature 6 Enabled
 #define CW_TI_007_EN 34  // 1-Wire Temperature 7 Enabled
-#define CW_ZIC_015_MH 35 // LIGHT POSITION MOVE TO HOME (=1)
+#define CW_ZIC_015_MB 35 // LIGHT POSITION MOVE TO Bottom (=1)
 #define CW_ZIC_015_MT 36 // LIGHT POSITION MOVE TO TOP (=1)
 #define CW_ZIC_015_SV 37 // LIGHT POSITION CONTROLLER SAVE MAX COUNT (=1)
 #define CW_ZIC_015_CL 38   // LIGHT POSITION CONTROLLER CALIBRATION MODE  (=1)
+#define CW_ZIC_015_RS 39   // LIGHT POSTION CONTROLLE RESET COUNTER  (=1)
 
 #define HR_TI_001 20     // 1-Wire Temperature 1
 #define HR_TI_002 21     // 1-Wire Temperature 2
@@ -200,6 +204,7 @@
 #define HR_TI_006_ID_L 116 //  1-Wire Temperature 6 (UID) Low
 #define HR_TI_007_ID_H 118 //  1-Wire Temperature 7 (UID) High
 #define HR_TI_007_ID_L 120 //  1-Wire Temperature 7 (UID) Low
+#define HR_XT_001DW    122     // Serial Place holder DW 1
 
 #define HW_AY_000 130     // Analog Output 0 Value (0-10V)
 #define HW_AY_001 131     // Analog Output 1 Value (0-10V)
@@ -231,20 +236,3 @@ union {
   uint64_t val;
   uint32_t val32[2];
 } bmacconvert;
-
-struct _lightPostionControlData {
-
-  long currentPositionCount;            // encoder PV in pulses
-  long previousPositionCount = -999999; // some imposible number
-  bool previousZIC_015_SV = false;      // used for doing oneshot save to EEPROM
-  bool isControlling = false ; // == true when controller is moving to a new SP
-  uint16_t setpoint;    // from HMI
-  float pv;             // 0-100 to HMI
-  uint32_t maxPulses =
-      DEFAULT_MAX_PULSE_COUNT_LIGHT_POSITION; // determined emperically - the
-                                              // mean of 6 tests can be changed
-                                              // during calibration process and
-                                              // stored in EEPROM
-};
-
-typedef _lightPostionControlData LightPositionControlData;
