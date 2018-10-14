@@ -69,7 +69,7 @@ void DA_LightPositionMgr::computeLightPosition() {
 void DA_LightPositionMgr::processCalibrationCommands() {
 
   if (calibrationMoveBottom && !calibrationMoveTop) {
-    if (!isAtBottomPosition())
+    if (!isAtBottomPosition(true))
       lowerLights();
   } else if (calibrationMoveTop && !calibrationMoveBottom) {
     if (!isAtTopPosition())
@@ -82,7 +82,7 @@ void DA_LightPositionMgr::processCalibrationCommands() {
 void DA_LightPositionMgr::doAutomatedControls() {
   processError = pv - sp;
   if (processError > DA_LIGHTPOSITION_DEFAULT_LIGHT_POSITION_DEADBAND) {
-    if (!isAtBottomPosition())
+    if (!isAtBottomPosition(false))
       lowerLights();
   } else if (processError < -DA_LIGHTPOSITION_DEFAULT_LIGHT_POSITION_DEADBAND) {
     if (!isAtTopPosition())
@@ -131,13 +131,14 @@ bool DA_LightPositionMgr::isAtTopPosition() {
   return (lRetVal);
 }
 
-bool DA_LightPositionMgr::isAtBottomPosition() {
+bool DA_LightPositionMgr::isAtBottomPosition( bool aCalMode) {
   bool lRetVal = false;
   if (lightPositionMgrState == IdleAtBottom ||
       (lightPositionMgrState == Lowering && !lightMoving)) {
     lightPositionMgrState = IdleAtBottom;
     lRetVal = true;
-    positionEncoder.write(maxPulses);
+    if(!aCalMode)
+      positionEncoder.write(maxPulses);
   }
 
   return (lRetVal);

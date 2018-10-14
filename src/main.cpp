@@ -426,6 +426,7 @@ KI_002.refresh();
 #endif
 
 #if defined(GC_BUILD)
+
   SCD30Sensor.refresh();
 #endif
 
@@ -946,6 +947,7 @@ void EEPROMLoadConfig()
   }
 
   uint32_t temp32;
+  int32_t temp32_;
   uint16_t temp16;
 
   EEPROM.get(EEPROM_IP_ADDR, temp32);
@@ -962,15 +964,16 @@ void EEPROMLoadConfig()
 
 
 #if defined(GC_BUILD)
-  EEPROM.get(EEPROM_LIGHT_POSITION_RAW_MAX_COUNT, temp32);
-  lightPositionMgr.setMaxPulses(temp32);
-*aOutputStream << "mx:" << temp32 << "getter:" << lightPositionMgr.getMaxPulses() << endl;
-  EEPROM.get(EEPROM_LIGHT_CURRENT_POSITION_RAW_COUNT, temp32);
-  lightPositionMgr.setRawPosition(temp32);
-*aOutputStream << "rw:" << temp32 << "getter:" << lightPositionMgr.getRawPV() << "getterPV:" << lightPositionMgr.getPV() << endl;
+//UNDO prints
+  EEPROM.get(EEPROM_LIGHT_POSITION_RAW_MAX_COUNT, temp32_);
+  lightPositionMgr.setMaxPulses(temp32_);
+//*aOutputStream << "mx:" << temp32_ << "getter:" << lightPositionMgr.getMaxPulses() << endl;
+  EEPROM.get(EEPROM_LIGHT_CURRENT_POSITION_RAW_COUNT, temp32_);
+  lightPositionMgr.setRawPosition(temp32_);
+//*aOutputStream << "rw:" << temp32_ << "getter:" << lightPositionMgr.getRawPV() << "getterPV:" << lightPositionMgr.getPV() << endl;
   EEPROM.get(EEPROM_LIGHT_POSITION_SP, temp16);
   lightPositionMgr.setSetpoint(temp16);
-  *aOutputStream << "sp:" << temp16 << "getter:" << lightPositionMgr.getSP() << endl;
+  //*aOutputStream << "sp:" << temp16 << "getter:" << lightPositionMgr.getSP() << endl;
   // modbus memory map content are 0. Force a vailue at startup
   // so that the SP is valid rather than 0. Otherwise, the actuator
   // will try to move to 0
@@ -1002,9 +1005,11 @@ void EEPROMWriteDefaultConfig() {
   temperatureMgr.resetMaps();
   EEPromWriteOneWireMaps();
 #if defined(GC_BUILD)
+//UNDO prints
+
   EEPROM.put(EEPROM_LIGHT_POSITION_RAW_MAX_COUNT,
-             lightPositionMgr.getMaxPulses());
-  EEPROM.put(EEPROM_LIGHT_POSITION_SP, lightPositionMgr.getSP());
+             lightPositionMgr.DA_LIGHTPOSITION_DEFAULT_MAX_PULSE_COUNT_LIGHT_POSITION);
+  EEPROM.put(EEPROM_LIGHT_POSITION_SP, lightPositionMgr.DA_LIGHTPOSITION_DEFAULT_LIGHT_SP);
 #endif
 }
 

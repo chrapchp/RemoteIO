@@ -20,15 +20,15 @@
 #include <DA_DiscreteOutput.h>
 #include <Encoder.h>
 
-#define DA_LIGHTPOSITION_DEFAULT_MAX_PULSE_COUNT_LIGHT_POSITION                \
-  34115 // determined emperically
-#define DA_LIGHTPOSITION_DEFAULT_LIGHT_POSITION_DEADBAND 0.15 // %
-#define DA_LIGHTPOSITION_DEFAULT_LIGHT_SP 50                  //%
+
+
 
 class DA_LightPositionMgr {
 public:
   enum DA_LightMgrState { Idle = 1, Rising, Lowering, IdleAtTop, IdleAtBottom };
-
+  const int32_t DA_LIGHTPOSITION_DEFAULT_MAX_PULSE_COUNT_LIGHT_POSITION = 34115;
+  const uint16_t DA_LIGHTPOSITION_DEFAULT_LIGHT_SP = 50;
+  const float DA_LIGHTPOSITION_DEFAULT_LIGHT_POSITION_DEADBAND = 0.15;
   /**
    * [DA_LightPositionMgr description]
    * @param aEncoder [Encoder instance to deal with 2x interrupts from position
@@ -55,7 +55,7 @@ public:
    * [getRawPV return current light position in counts]
    * @return [0-Maxpulses]
    */
-  inline long getRawPV() __attribute__((always_inline)) {
+  inline int32_t getRawPV() __attribute__((always_inline)) {
     return currentPositionCount;
   }
   /**
@@ -109,7 +109,7 @@ public:
    * [setRawPosition provide controller and encoder with a know start count]
    * @param aRawCount [0-maxPulses]
    */
-  inline void setRawPosition(long aRawCount) __attribute__((always_inline)) {
+  inline void setRawPosition(int32_t aRawCount) __attribute__((always_inline)) {
     positionEncoder.write(aRawCount);
     previousPositionCount= aRawCount;
     currentPositionCount = aRawCount;
@@ -120,7 +120,7 @@ public:
    * [setMaxPulses set the count value to fully extended the actuator]
    * @param aMaxPulses [non zero value]
    */
-  inline void setMaxPulses(long aMaxPulses) __attribute__((always_inline)) {
+  inline void setMaxPulses(int32_t aMaxPulses) __attribute__((always_inline)) {
     maxPulses = aMaxPulses;
   }
 
@@ -128,7 +128,7 @@ public:
   * [getMaxPulses return the maximul pulse count representing a fully extended actuator]
   * @return [description]
   */
-  inline long getMaxPulses() __attribute__((always_inline)) {
+  inline int32_t getMaxPulses() __attribute__((always_inline)) {
     return (maxPulses);
   }
 
@@ -140,7 +140,7 @@ protected:
   void raiseLights();
   void holdLightPosition();
   bool isAtTopPosition();
-  bool isAtBottomPosition();
+  bool isAtBottomPosition( bool aCalMode);
   void detectAndProcessTransitionToStop();
 
 private:
@@ -151,15 +151,14 @@ private:
   DA_DiscreteOutput &in2; // H-Brdige forward/reverse
   DA_DiscreteOutput enA;  // H-Brdige Motor on/off/PWM
 
-  long currentPositionCount;            // encoder PV in pulses
-  long previousPositionCount = -999999; // some imposible number
+  int32_t currentPositionCount;            // encoder PV in pulses
+  int32_t previousPositionCount = -999999; // some imposible number
   bool previousZIC_015_SV = false;      // used for doing oneshot save to EEPROM
   bool lightMoving = false;             // = true when there is movement
   bool previousLightMoving;
   uint16_t sp = DA_LIGHTPOSITION_DEFAULT_LIGHT_SP; // from HMI
   float pv;                                        // 0-100 to HMI
-  uint32_t maxPulses =
-      DA_LIGHTPOSITION_DEFAULT_MAX_PULSE_COUNT_LIGHT_POSITION; // determined
+  int32_t maxPulses =DA_LIGHTPOSITION_DEFAULT_MAX_PULSE_COUNT_LIGHT_POSITION; // determined
                                                                // emperically -
                                                                // the
 
