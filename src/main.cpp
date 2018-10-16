@@ -94,7 +94,6 @@ void onFlowCalc();
 void doLightPositionControl();
 bool isLightPositionWriteRequest();
 void onLightPositionStop(DA_LightPositionMgr::DA_LightMgrState aReason);
-void onRefreshLightManager();
 #endif
 
 void processHostWrites();
@@ -238,8 +237,6 @@ uint16_t KI_001_CV = 0;
 
 #if defined(GC_BUILD)
 DA_SCD30 SCD30Sensor = DA_SCD30(Serial2);
-DA_NonBlockingDelay KI_002 =
-    DA_NonBlockingDelay(LIGHT_POSITION_MGR_REFRESH_INTERVAL, onRefreshLightManager);
 // Encoder lightPosition(CONTROLLINO_IN0, CONTROLLINO_IN1);
 //
 Encoder lightPosition(CONTROLLINO_IN0, CONTROLLINO_IN1);
@@ -304,6 +301,8 @@ void setup() {
   SCD30Sensor.init();
   SCD30Sensor.setPollingInterval(DEFAULT_SC30_POLLING_INTERVAL);
   lightPositionMgr.setOnStopCallBack(onLightPositionStop);
+  lightPositionMgr.setRefreshInterval(DEFAULT_LIGHT_POSITION_MGR_REFRESH_INTERVAL);
+  lightPositionMgr.setManagerMode( true );
 
 #endif
 
@@ -379,6 +378,7 @@ void setup() {
   DY_017.setEnabled(true);
   DY_021.setEnabled(true);
 
+
 #if not defined(NC_BUILD)
   DY_018.setEnabled(true);
   DY_019.setEnabled(true);
@@ -407,10 +407,6 @@ void setup() {
 void loop() {
   MBSlave.MbsRun();
 
-#if defined(GC_BUILD)
-//  doLightPositionControl();
-KI_002.refresh();
-#endif
 
   refreshHostReads();
   processHostWrites();
@@ -426,8 +422,9 @@ KI_002.refresh();
 #endif
 
 #if defined(GC_BUILD)
-
-  SCD30Sensor.refresh();
+// UNDO
+  //SCD30Sensor.refresh();
+  doLightPositionControl();
 #endif
 
 #if defined(NC_BUILD)
@@ -538,13 +535,10 @@ void onLightPositionStop(DA_LightPositionMgr::DA_LightMgrState aReason) {
              lightPositionMgr.getRawPV());
 }
 
-void onRefreshLightManager() {
-  doLightPositionControl();
-}
+
 /**
  * [doLightPositionControl ]
  *  Control the light position using via a setpoint from the HMI
- *  if the limit switch is met stop the motor
  * Note: 100% -> lowest  light position e.g. close to plants
  *        0   -> highest light position e.g. away to plants
  *        when arm is completely retracted count = maxcount

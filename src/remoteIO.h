@@ -31,8 +31,8 @@
 
 #endif // if defined(GC_BUILD)
 
-//#define IO_DEBUG
-#undef IO_DEBUG
+#define IO_DEBUG
+//#undef IO_DEBUG
 #define APP_BUILD_DATE 1529013511L
 
 // detecting modbuss coil  change
@@ -41,8 +41,8 @@
 #define BIT_FALLING_EDGE 2
 
 // IP addressing used whent nothing stored in EEPROM
-#define DEFAULT_IP_ADDRESS 192, 168, 1, 253  // 192.168.1.252 NC 251 NC2 253 GC
-#define DEFAULT_GATEWAY 192, 168, 1, 1       // 192.168.1.1
+#define DEFAULT_IP_ADDRESS 192, 168, 0, 253  // 192.168.1.252 NC 251 NC2 253 GC
+#define DEFAULT_GATEWAY 192, 168, 0, 1       // 192.168.1.1
 #define DEFAULT_SUBNET_MASK 255, 255, 255, 0 // 255.255.255.0
 #define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFD // GC
 //#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFE  // NC
@@ -56,8 +56,7 @@
 #define DEFAULT_1WIRE_POLLING_INTERVAL 5000          // ms
 #define DEFAULT_ATLAS_POLLING_INTERVAL 3000          // ms
 #define DEFAULT_SC30_POLLING_INTERVAL 5000           // ms
-#define DEFAULT_MAX_PULSE_COUNT_LIGHT_POSITION 34115 // determined emperically
-#define DEFAULT_LIGHT_POSITION_DEADBAND 0.15          // %
+#define DEFAULT_LIGHT_POSITION_MGR_REFRESH_INTERVAL 150 // ms
 
 // EEPROM addresses
 #define EEPROM_CONFIGURED 2        // this value stored at address
@@ -73,7 +72,7 @@
 #define EEPROM_LIGHT_POSITION_SP EEPROM_LIGHT_CURRENT_POSITION_RAW_COUNT + sizeof(uint32_t)
 
 #define HEART_BEAT_PERIOD 5000 // ms
-#define LIGHT_POSITION_MGR_REFRESH_INTERVAL 150 // ms
+
 
 // flow meter constants
 #define FLOW_CALC_PERIOD_SECONDS 1 // flow rate calc period s
