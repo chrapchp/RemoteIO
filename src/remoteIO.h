@@ -31,8 +31,8 @@
 
 #endif // if defined(GC_BUILD)
 
-#define IO_DEBUG
-//#undef IO_DEBUG
+//#define IO_DEBUG
+#undef IO_DEBUG
 #define APP_BUILD_DATE 1529013511L
 
 // detecting modbuss coil  change

@@ -423,7 +423,7 @@ void loop() {
 
 #if defined(GC_BUILD)
 // UNDO
-  //SCD30Sensor.refresh();
+  SCD30Sensor.refresh();
   doLightPositionControl();
 #endif
 
