@@ -424,6 +424,8 @@ void loop() {
 #if defined(GC_BUILD)
 // UNDO
   SCD30Sensor.refresh();
+
+
   doLightPositionControl();
 #endif
 
@@ -703,16 +705,29 @@ void refreshHostReads() {
 
 #if defined(NC_BUILD)
 
-  MBSlave.MbData[HR_XT_001] =
-      (int)(atlasSensorMgr.getCachedValue(DA_ATLAS_PH) * 10.0);
-  MBSlave.MbData[HR_XT_002] =
-      (int)(atlasSensorMgr.getCachedValue(DA_ATLAS_EC) * 10.0);
-  MBSlave.MbData[HR_XT_003] =
-      (int)(atlasSensorMgr.getCachedValue(DA_ATLAS_ORB) * 10.0);
-  MBSlave.MbData[HR_XT_004] =
-      (int)(atlasSensorMgr.getCachedValue(DA_ATLAS_DO) * 10.0);
-  MBSlave.MbData[HR_XT_005] =
-      (int)(atlasSensorMgr.getCachedValue(DA_ATLAS_RTD) * 10.0);
+  bfconvert.val = atlasSensorMgr.getCachedValue(DA_ATLAS_EC) ;
+  MBSlave.MbData[HR_XT_001F] = bfconvert.regsf[1];
+  MBSlave.MbData[HR_XT_001F + 1 ] = bfconvert.regsf[0];
+
+  bfconvert.val = atlasSensorMgr.getCachedValue(DA_ATLAS_ORB) ;
+  MBSlave.MbData[HR_XT_002F] = bfconvert.regsf[1];
+  MBSlave.MbData[HR_XT_002F + 1 ] = bfconvert.regsf[0];
+
+
+  bfconvert.val = atlasSensorMgr.getCachedValue(DA_ATLAS_PH) ;
+  MBSlave.MbData[HR_XT_003F] = bfconvert.regsf[1];
+  MBSlave.MbData[HR_XT_003F + 1 ] = bfconvert.regsf[0];
+
+
+  bfconvert.val = atlasSensorMgr.getCachedValue(DA_ATLAS_RTD) ;
+  MBSlave.MbData[HR_XT_004F] = bfconvert.regsf[1];
+  MBSlave.MbData[HR_XT_004F + 1 ] = bfconvert.regsf[0];
+
+
+  bfconvert.val = atlasSensorMgr.getCachedValue(DA_ATLAS_DO) ;
+  MBSlave.MbData[HR_XT_005F] = bfconvert.regsf[1];
+  MBSlave.MbData[HR_XT_005F + 1 ] = bfconvert.regsf[0];
+
 
 #endif // if defined(NC_BUILD)
 
@@ -1013,6 +1028,14 @@ void remoteAtlasCommandHandler(uint8_t argc, char **argv,
   char command = argv[0][0];
 
   switch (command) {
+  case 'f':
+  if (argc == 1) {
+
+    atlasSensorMgr.flush();
+  //  atlasSensorMgr.serialize(aOutputStream, true);
+  } else
+    *aOutputStream << F("Unrecongized format for command") << endl;
+  break;
   case 's':
 
     if (argc == 3) {
@@ -1020,7 +1043,7 @@ void remoteAtlasCommandHandler(uint8_t argc, char **argv,
 
       if ((channel >= 0) && (channel < (DA_ATLAS_MAX_CHANNELS))) {
         char atlasrxBuff[DA_ATLAS_RX_BUF_SZ];
-        atlasSensorMgr.sendRaw(channel, argv[2], atlasrxBuff, 1000);
+        atlasSensorMgr.sendRaw(channel, argv[2], atlasrxBuff, 2000);
         *aOutputStream << F("Reply:") << atlasrxBuff << endl;
       } else
         *aOutputStream << F("Invalid Channel:") << channel << endl;
@@ -1036,6 +1059,8 @@ void remoteAtlasCommandHandler(uint8_t argc, char **argv,
                        << "] Type:" << atlasSensorMgr.getSensorType(i)
                        << " cached value:" << atlasSensorMgr.getCachedValue(i)
                        << endl;
+
+    //  atlasSensorMgr.serialize(aOutputStream, true);
     } else
       *aOutputStream << F("Unrecongized format for command") << endl;
     break;
