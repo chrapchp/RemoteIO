@@ -162,8 +162,10 @@ DA_DiscreteInput DI_007 =
     DA_DiscreteInput(CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_11,
                      DA_DiscreteInput::RisingEdgeDetect, false);
 #endif
-DA_DiscreteInput DI_008 =
+
+/*DA_DiscreteInput DI_008 =
     DA_DiscreteInput(CONTROLLINO_A12, DA_DiscreteInput::None, false);
+    */
 DA_DiscreteInput DI_009 =
     DA_DiscreteInput(CONTROLLINO_A13, DA_DiscreteInput::None, false);
 
@@ -219,8 +221,14 @@ DA_AnalogInput AI_004 =
     DA_AnalogInput(CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_04, 0.0, 1024.0);
 DA_AnalogInput AI_005 =
     DA_AnalogInput(CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_05, 0.0, 1024.0);
-DA_AnalogInput AI_006 =
+
+
+
+/*DA_AnalogInput AI_006 =
     DA_AnalogInput(CONTROLLINO_SCREW_TERMINAL_ANALOG_ADC_IN_06, 0.0, 1024.0);
+  */
+DA_AnalogInput AI_006 =
+        DA_AnalogInput(CONTROLLINO_A12, 0.0, 1024.0);
 
 // 0-10 V analog outputs
 DA_AnalogOutput AY_000 = DA_AnalogOutput(CONTROLLINO_AO0);
@@ -343,7 +351,7 @@ void setup() {
   DI_005.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
   DI_006.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
   DI_007.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
-  DI_008.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
+  //DI_008.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
   DI_009.setDebounceTime(DEFAULT_DI_DEBOUNCE_TIME);
 
   // Enable/Disable DOs from master values
@@ -395,7 +403,7 @@ void setup() {
   DI_005.setEnabled(true);
   DI_006.setEnabled(true);
   DI_007.setEnabled(true);
-  DI_008.setEnabled(true);
+  //DI_008.setEnabled(true);
   DI_009.setEnabled(true);
 
   // DI_003.serialize(aOutputStream, true);
@@ -455,7 +463,7 @@ void refreshDiscreteInputs() {
   DI_005.refresh();
   DI_006.refresh();
   DI_007.refresh();
-  DI_008.refresh();
+  //DI_008.refresh();
   DI_009.refresh();
 
   CI_001.refresh();
@@ -756,7 +764,7 @@ MBSlave.MbData[HR_XT_001DW + 1] = blconvert.regsl[0];
   MBSlave.SetBit(CS_DI_005, DI_005.getSample());
   MBSlave.SetBit(CS_DI_006, DI_006.getSample());
   MBSlave.SetBit(CS_DI_007, DI_007.getSample());
-  MBSlave.SetBit(CS_DI_008, DI_008.getSample());
+  //MBSlave.SetBit(CS_DI_008, DI_008.getSample());
   MBSlave.SetBit(CS_DI_009, DI_009.getSample());
 
 #if not defined(GC_BUILD)

@@ -41,12 +41,17 @@
 #define BIT_FALLING_EDGE 2
 
 // IP addressing used whent nothing stored in EEPROM
-#define DEFAULT_IP_ADDRESS 192, 168, 0, 252  // 192.168.1.252 NC 251 NC2 253 GC
+#define DEFAULT_IP_ADDRESS 192, 168, 0, 247  // 192.168.1.252 NC 251 NC2 253 GC , 192.168.0.247 GC22
 #define DEFAULT_GATEWAY 192, 168, 0, 1       // 192.168.1.1
 #define DEFAULT_SUBNET_MASK 255, 255, 255, 0 // 255.255.255.0
 //#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFD // GC
-#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFE  // NC
+//#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFE  // NC
 //#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x00, 0x01, 0xFF  // NC2
+
+
+
+#define DEFAULT_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0x0E, 0x0, 0xF7 // GC 22
+
 
 // #define DEFAULT_MAC_ADDRESS 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF
 #define DEFAULT_PENDING_MAC_ADDRESS 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -188,7 +193,7 @@
 #define HR_XT_002F 52     // Serial Place holder 2 float
 #define HR_XT_003F 54     // Serial Place holder 3 float
 #define HR_XT_004F 56     // Serial Place holder 4 float
-#define HR_XT_005F 58     // Serial Place holder 5 float 
+#define HR_XT_005F 58     // Serial Place holder 5 float
 
 
 #define HR_CI_006_CV 82    // Current IP Address (decimal format)
