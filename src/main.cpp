@@ -19,12 +19,12 @@
 #include <MgsModbus.h> // cchange memory size here
 #include <avr/wdt.h>
 
+
 #include <Encoder.h>
 
 #include <Streaming.h>
 
-#include <DallasTemperature.h>
-#include <OneWire.h>
+
 
 #include <DA_AnalogOutput.h>
 #include <DA_Analoginput.h>
@@ -53,6 +53,7 @@ DA_AtlasMgr atlasSensorMgr =
 
 #if defined(GC_BUILD)
 DA_SCD30 SCD30Sensor = DA_SCD30(Serial2);
+
 // Encoder lightPosition(CONTROLLINO_IN0, CONTROLLINO_IN1);
 Encoder lightPosition(CONTROLLINO_IN1, CONTROLLINO_IN0);
 LightPositionControlData lightPositionControlData;
@@ -99,7 +100,8 @@ void onXT_007_PulseIn();
 void onFlowCalc();
 #else
 void doLightPositionControl();
-void onHomeLimitSwitchRisingEdge();
+void onHomeLimitSwitchRisingEdge(bool state,
+                          int aPin);
 bool isLightPositionWriteRequest();
 #endif
 
@@ -548,7 +550,7 @@ void computeLightPosition() {
   }
 }
 
-void onHomeLimitSwitchRisingEdge() {
+void onHomeLimitSwitchRisingEdge(bool state, int aPin) {
 
   //  lightPositionControlData.isHomed = true;
   DY_007.write(false);

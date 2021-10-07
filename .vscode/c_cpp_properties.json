@@ -1,0 +1,95 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
+{
+    "configurations": [
+        {
+            "name": "PlatformIO",
+            "includePath": [
+                "C:/Dev/source/platformIO/projects/RemoteIO/include",
+                "C:/Dev/source/platformIO/projects/RemoteIO/src",
+                "C:/Dev/source/platformIO/projects/RemoteIO/lib/msgModbus",
+                "C:/Users/chrap/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                "C:/Dev/source/platformIO/libs/IOLib/src",
+                "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/ethernet/src",
+                "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/Encoder",
+                "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/Encoder/utility",
+                "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/arduinounit/src",
+                "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/DS3232RTC/src",
+                "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/dallasTemperature",
+                "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/Time",
+                "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/Streaming/src",
+                "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/OneWire@src-7394625c00c7ad4e547cedddf6448675",
+                "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/ModbusMaster/src",
+                "C:/Users/chrap/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                "C:/Users/chrap/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                "C:/Users/chrap/.platformio/packages/framework-arduino-avr/cores/arduino",
+                "C:/Users/chrap/.platformio/packages/framework-arduino-avr/variants/Controllino_maxi_automation",
+                "C:/Dev/source/platformIO/libs/IOLib/.git",
+                "C:/Dev/source/platformIO/libs/IOLib/.pio",
+                "C:/Dev/source/platformIO/libs/IOLib/.vscode",
+                "C:/Dev/source/platformIO/libs/IOLib/examples",
+                "C:/Dev/source/platformIO/libs/IOLib/test",
+                "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/OneWire",
+                "C:/Users/chrap/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                "C:/Users/chrap/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                "C:/Users/chrap/.platformio/packages/tool-unity",
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "C:/Dev/source/platformIO/projects/RemoteIO/include",
+                    "C:/Dev/source/platformIO/projects/RemoteIO/src",
+                    "C:/Dev/source/platformIO/projects/RemoteIO/lib/msgModbus",
+                    "C:/Users/chrap/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                    "C:/Dev/source/platformIO/libs/IOLib/src",
+                    "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/ethernet/src",
+                    "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/Encoder",
+                    "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/Encoder/utility",
+                    "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/arduinounit/src",
+                    "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/DS3232RTC/src",
+                    "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/dallasTemperature",
+                    "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/Time",
+                    "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/Streaming/src",
+                    "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/OneWire@src-7394625c00c7ad4e547cedddf6448675",
+                    "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/ModbusMaster/src",
+                    "C:/Users/chrap/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                    "C:/Users/chrap/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                    "C:/Users/chrap/.platformio/packages/framework-arduino-avr/cores/arduino",
+                    "C:/Users/chrap/.platformio/packages/framework-arduino-avr/variants/Controllino_maxi_automation",
+                    "C:/Dev/source/platformIO/libs/IOLib/.git",
+                    "C:/Dev/source/platformIO/libs/IOLib/.pio",
+                    "C:/Dev/source/platformIO/libs/IOLib/.vscode",
+                    "C:/Dev/source/platformIO/libs/IOLib/examples",
+                    "C:/Dev/source/platformIO/libs/IOLib/test",
+                    "C:/Dev/source/platformIO/projects/RemoteIO/.pio/libdeps/controllino_maxi_automation/OneWire",
+                    "C:/Users/chrap/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                    "C:/Users/chrap/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                    "C:/Users/chrap/.platformio/packages/tool-unity",
+                    ""
+                ]
+            },
+            "defines": [
+                "PLATFORMIO=50200",
+                "ARDUINO_AVR_MEGA2560",
+                "F_CPU=16000000L",
+                "ARDUINO_ARCH_AVR",
+                "ARDUINO=10808",
+                "GC_BUILD",
+                "__AVR_ATmega2560__",
+                ""
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "compilerPath": "C:/Users/chrap/.platformio/packages/toolchain-atmelavr/bin/avr-gcc.exe",
+            "compilerArgs": [
+                "-mmcu=atmega2560",
+                ""
+            ]
+        }
+    ],
+    "version": 4
+}

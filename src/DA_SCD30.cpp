@@ -12,7 +12,7 @@
 #include "DA_SCD30.h"
 #include <Streaming.h>
 
-DA_SCD30::DA_SCD30(Stream &s) : DA_Input(IO_TYPE::SCD30), serialPort(s) {
+DA_SCD30::DA_SCD30(Stream &s) : DA_Input(IO_TYPE::SDC30), serialPort(s) {
   setPollingInterval(SCD30_POLLING_INTERVAL);
 }
 
